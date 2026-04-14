@@ -1,0 +1,79 @@
+{
+    "name": "shared-rag-vscode",
+    "displayName": "Shared RAG for VS Code",
+    "description": "Integrate shared RAG capabilities directly into VS Code",
+    "version": "1.0.0",
+    "publisher": "rag-team",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "AI",
+        "Programming Languages",
+        "Education"
+    ],
+    "activationEvents": [
+        "onLanguage:python",
+        "onLanguage:javascript",
+        "onLanguage:typescript",
+        "onLanguage:markdown"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "sharedRAG.query",
+                "title": "Shared RAG: Query"
+            },
+            {
+                "command": "sharedRAG.configure",
+                "title": "Shared RAG: Configure Connection"
+            },
+            {
+                "command": "sharedRAG.showSources",
+                "title": "Shared RAG: Show Sources"
+            }
+        ],
+        "configuration": {
+            "type": "object",
+            "title": "Shared RAG Configuration",
+            "properties": {
+                "sharedRAG.apiUrl": {
+                    "type": "string",
+                    "default": "http://localhost:8000",
+                    "description": "URL of the Shared RAG API server"
+                },
+                "sharedRAG.apiKey": {
+                    "type": "string",
+                    "default": "",
+                    "description": "API key for authentication (optional)"
+                },
+                "sharedRAG.defaultTopK": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Default number of documents to retrieve"
+                },
+                "sharedRAG.contextWindow": {
+                    "type": "integer",
+                    "default": 4096,
+                    "description": "Context window size for RAG queries"
+                }
+            }
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "test": "npm run compile && node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.85.0",
+        "@types/node": "^20.10.0",
+        "typescript": "^5.3.0",
+        "@vscode/test-electron": "^2.3.0"
+    },
+    "dependencies": {
+        "axios": "^1.6.0"
+    }
+}

@@ -1,0 +1,1138 @@
+{
+  "summary": {
+    "avg_groundedness": 0.2767857142857143,
+    "avg_completeness": 0.24798817254174396,
+    "avg_utilization": 0.0,
+    "avg_relevancy": 1.0,
+    "avg_total_score": 0.3450327574211503,
+    "std_groundedness": 0.2508103748967418,
+    "std_completeness": 0.1524536143274179,
+    "std_utilization": 0.0,
+    "std_relevancy": 0.0,
+    "std_total_score": 0.07683169191566876,
+    "total_evaluations": 56,
+    "timestamp": "2026-04-14T06:08:53.467161"
+  },
+  "all_results": [
+    {
+      "query": "What is the main purpose of the RAG system?",
+      "answer": "Based on the context, the answer to 'What is the main purpose of the RAG system?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the main purpose of the RAG system?",
+        "Document 2: Additional context related to What is the main purpose of the RAG system?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.36363636363636365,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4409090909090909,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the hybrid retriever work?",
+      "answer": "Based on the context, the answer to 'How does the hybrid retriever work?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the hybrid retriever work?",
+        "Document 2: Additional context related to How does the hybrid retriever work?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.3,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.275,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What metrics does the evaluation framework track?",
+      "answer": "Based on the context, the answer to 'What metrics does the evaluation framework track?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What metrics does the evaluation framework track?",
+        "Document 2: Additional context related to What metrics does the evaluation framework track?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.14285714285714285,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.38571428571428573,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "Explain the cross-encoder reranker implementation",
+      "answer": "Based on the context, the answer to 'Explain the cross-encoder reranker implementation' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about Explain the cross-encoder reranker implementation",
+        "Document 2: Additional context related to Explain the cross-encoder reranker implementation",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.45454545454545453,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.31363636363636366,
+      "evaluation_details": {
+        "groundedness_explanation": "0/1 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/1 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the default embedding model used?",
+      "answer": "Based on the context, the answer to 'What is the default embedding model used?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the default embedding model used?",
+        "Document 2: Additional context related to What is the default embedding model used?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.25,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4125,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "What are the configuration options for the retriever?",
+      "answer": "Based on the context, the answer to 'What are the configuration options for the retriever?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What are the configuration options for the retriever?",
+        "Document 2: Additional context related to What are the configuration options for the retriever?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.125,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.38125,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "How is the evaluation dashboard generated?",
+      "answer": "Based on the context, the answer to 'How is the evaluation dashboard generated?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How is the evaluation dashboard generated?",
+        "Document 2: Additional context related to How is the evaluation dashboard generated?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.14285714285714285,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2357142857142857,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the weight distribution for evaluation metrics?",
+      "answer": "Based on the context, the answer to 'What is the weight distribution for evaluation metrics?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the weight distribution for evaluation metrics?",
+        "Document 2: Additional context related to What is the weight distribution for evaluation metrics?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.0,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.35,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the system handle multi-part queries?",
+      "answer": "Based on the context, the answer to 'How does the system handle multi-part queries?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the system handle multi-part queries?",
+        "Document 2: Additional context related to How does the system handle multi-part queries?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2222222222222222,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.40555555555555556,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "What file structure does the evaluation framework use?",
+      "answer": "Based on the context, the answer to 'What file structure does the evaluation framework use?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What file structure does the evaluation framework use?",
+        "Document 2: Additional context related to What file structure does the evaluation framework use?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "When should I use hybrid search over BM25 alone?",
+      "answer": "Based on the context, the answer to 'When should I use hybrid search over BM25 alone?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about When should I use hybrid search over BM25 alone?",
+        "Document 2: Additional context related to When should I use hybrid search over BM25 alone?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.45454545454545453,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4636363636363636,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "9/9 query terms in answer"
+      }
+    },
+    {
+      "query": "How can I improve answer groundedness?",
+      "answer": "Based on the context, the answer to 'How can I improve answer groundedness?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How can I improve answer groundedness?",
+        "Document 2: Additional context related to How can I improve answer groundedness?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.36363636363636365,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2909090909090909,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the best way to evaluate RAG quality?",
+      "answer": "Based on the context, the answer to 'What is the best way to evaluate RAG quality?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the best way to evaluate RAG quality?",
+        "Document 2: Additional context related to What is the best way to evaluate RAG quality?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.0,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.35,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "9/9 query terms in answer"
+      }
+    },
+    {
+      "query": "How do I set up baseline measurements?",
+      "answer": "Based on the context, the answer to 'How do I set up baseline measurements?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How do I set up baseline measurements?",
+        "Document 2: Additional context related to How do I set up baseline measurements?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.2222222222222222,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.25555555555555554,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "What makes a good test query for RAG?",
+      "answer": "Based on the context, the answer to 'What makes a good test query for RAG?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What makes a good test query for RAG?",
+        "Document 2: Additional context related to What makes a good test query for RAG?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.3,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.425,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the difference between BM25 and embedding search?",
+      "answer": "Based on the context, the answer to 'What is the difference between BM25 and embedding search?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the difference between BM25 and embedding search?",
+        "Document 2: Additional context related to What is the difference between BM25 and embedding search?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.375,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.44375,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "9/9 query terms in answer"
+      }
+    },
+    {
+      "query": "How does cross-encoder reranking compare to re-ranking?",
+      "answer": "Based on the context, the answer to 'How does cross-encoder reranking compare to re-ranking?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does cross-encoder reranking compare to re-ranking?",
+        "Document 2: Additional context related to How does cross-encoder reranking compare to re-ranking?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.2727272727272727,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2681818181818182,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "9/9 query terms in answer"
+      }
+    },
+    {
+      "query": "What are the trade-offs of different evaluation frameworks?",
+      "answer": "Based on the context, the answer to 'What are the trade-offs of different evaluation frameworks?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What are the trade-offs of different evaluation frameworks?",
+        "Document 2: Additional context related to What are the trade-offs of different evaluation frameworks?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.3,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.425,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "9/9 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the evaluation framework compare to Ragas?",
+      "answer": "Based on the context, the answer to 'How does the evaluation framework compare to Ragas?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the evaluation framework compare to Ragas?",
+        "Document 2: Additional context related to How does the evaluation framework compare to Ragas?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the advantage of hybrid search?",
+      "answer": "Based on the context, the answer to 'What is the advantage of hybrid search?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the advantage of hybrid search?",
+        "Document 2: Additional context related to What is the advantage of hybrid search?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "What causes low groundedness scores?",
+      "answer": "Based on the context, the answer to 'What causes low groundedness scores?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What causes low groundedness scores?",
+        "Document 2: Additional context related to What causes low groundedness scores?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.5714285714285714,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.34285714285714286,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "5/5 query terms in answer"
+      }
+    },
+    {
+      "query": "How to fix incomplete answers?",
+      "answer": "Based on the context, the answer to 'How to fix incomplete answers?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How to fix incomplete answers?",
+        "Document 2: Additional context related to How to fix incomplete answers?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.0,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "5/5 query terms in answer"
+      }
+    },
+    {
+      "query": "Why is utilization score low?",
+      "answer": "Based on the context, the answer to 'Why is utilization score low?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about Why is utilization score low?",
+        "Document 2: Additional context related to Why is utilization score low?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.4444444444444444,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.3111111111111111,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "5/5 query terms in answer"
+      }
+    },
+    {
+      "query": "What causes relevance issues?",
+      "answer": "Based on the context, the answer to 'What causes relevance issues?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What causes relevance issues?",
+        "Document 2: Additional context related to What causes relevance issues?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.3,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.275,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "4/4 query terms in answer"
+      }
+    },
+    {
+      "query": "How to improve overall RAG performance?",
+      "answer": "Based on the context, the answer to 'How to improve overall RAG performance?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How to improve overall RAG performance?",
+        "Document 2: Additional context related to How to improve overall RAG performance?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.0,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the system handle ambiguous queries?",
+      "answer": "Based on the context, the answer to 'How does the system handle ambiguous queries?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the system handle ambiguous queries?",
+        "Document 2: Additional context related to How does the system handle ambiguous queries?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.3,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.425,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the role of the memory manager in RAG?",
+      "answer": "Based on the context, the answer to 'What is the role of the memory manager in RAG?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the role of the memory manager in RAG?",
+        "Document 2: Additional context related to What is the role of the memory manager in RAG?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.42857142857142855,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.45714285714285713,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "9/9 query terms in answer"
+      }
+    },
+    {
+      "query": "How are evaluation results aggregated over time?",
+      "answer": "Based on the context, the answer to 'How are evaluation results aggregated over time?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How are evaluation results aggregated over time?",
+        "Document 2: Additional context related to How are evaluation results aggregated over time?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.3333333333333333,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2833333333333333,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the impact of context window size?",
+      "answer": "Based on the context, the answer to 'What is the impact of context window size?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the impact of context window size?",
+        "Document 2: Additional context related to What is the impact of context window size?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.125,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.38125,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the system handle long documents?",
+      "answer": "Based on the context, the answer to 'How does the system handle long documents?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the system handle long documents?",
+        "Document 2: Additional context related to How does the system handle long documents?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.125,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.38125,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the purpose of the evaluation metrics?",
+      "answer": "Based on the context, the answer to 'What is the purpose of the evaluation metrics?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the purpose of the evaluation metrics?",
+        "Document 2: Additional context related to What is the purpose of the evaluation metrics?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2857142857142857,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.42142857142857143,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "How is the total score calculated?",
+      "answer": "Based on the context, the answer to 'How is the total score calculated?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How is the total score calculated?",
+        "Document 2: Additional context related to How is the total score calculated?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.375,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.29375,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the minimum test query set size?",
+      "answer": "Based on the context, the answer to 'What is the minimum test query set size?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the minimum test query set size?",
+        "Document 2: Additional context related to What is the minimum test query set size?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "How do I customize evaluation weights?",
+      "answer": "Based on the context, the answer to 'How do I customize evaluation weights?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How do I customize evaluation weights?",
+        "Document 2: Additional context related to How do I customize evaluation weights?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.6,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.35,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What information is stored in evaluation results?",
+      "answer": "Based on the context, the answer to 'What information is stored in evaluation results?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What information is stored in evaluation results?",
+        "Document 2: Additional context related to What information is stored in evaluation results?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.5,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.325,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "How can I visualize evaluation trends?",
+      "answer": "Based on the context, the answer to 'How can I visualize evaluation trends?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How can I visualize evaluation trends?",
+        "Document 2: Additional context related to How can I visualize evaluation trends?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.0,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the role of ground truth in evaluation?",
+      "answer": "Based on the context, the answer to 'What is the role of ground truth in evaluation?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the role of ground truth in evaluation?",
+        "Document 2: Additional context related to What is the role of ground truth in evaluation?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2857142857142857,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.42142857142857143,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "9/9 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the system extract claims from answers?",
+      "answer": "Based on the context, the answer to 'How does the system extract claims from answers?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the system extract claims from answers?",
+        "Document 2: Additional context related to How does the system extract claims from answers?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.25,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4125,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the significance of query decomposition?",
+      "answer": "Based on the context, the answer to 'What is the significance of query decomposition?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the significance of query decomposition?",
+        "Document 2: Additional context related to What is the significance of query decomposition?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.16666666666666666,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.39166666666666666,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "How are context-specific patterns identified?",
+      "answer": "Based on the context, the answer to 'How are context-specific patterns identified?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How are context-specific patterns identified?",
+        "Document 2: Additional context related to How are context-specific patterns identified?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.2222222222222222,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.25555555555555554,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the evaluation pipeline workflow?",
+      "answer": "Based on the context, the answer to 'What is the evaluation pipeline workflow?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the evaluation pipeline workflow?",
+        "Document 2: Additional context related to What is the evaluation pipeline workflow?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.3333333333333333,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2833333333333333,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "How do I run baseline evaluation?",
+      "answer": "Based on the context, the answer to 'How do I run baseline evaluation?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How do I run baseline evaluation?",
+        "Document 2: Additional context related to How do I run baseline evaluation?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.14285714285714285,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2357142857142857,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What file format are evaluation results saved in?",
+      "answer": "Based on the context, the answer to 'What file format are evaluation results saved in?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What file format are evaluation results saved in?",
+        "Document 2: Additional context related to What file format are evaluation results saved in?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.5,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.47500000000000003,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "How can I compare different RAG configurations?",
+      "answer": "Based on the context, the answer to 'How can I compare different RAG configurations?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How can I compare different RAG configurations?",
+        "Document 2: Additional context related to How can I compare different RAG configurations?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.2222222222222222,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.25555555555555554,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the importance of hyperparameter documentation?",
+      "answer": "Based on the context, the answer to 'What is the importance of hyperparameter documentation?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the importance of hyperparameter documentation?",
+        "Document 2: Additional context related to What is the importance of hyperparameter documentation?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.16666666666666666,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.39166666666666666,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the dashboard handle large result sets?",
+      "answer": "Based on the context, the answer to 'How does the dashboard handle large result sets?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the dashboard handle large result sets?",
+        "Document 2: Additional context related to How does the dashboard handle large result sets?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.125,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.38125,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the standard deviation used for in evaluation?",
+      "answer": "Based on the context, the answer to 'What is the standard deviation used for in evaluation?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the standard deviation used for in evaluation?",
+        "Document 2: Additional context related to What is the standard deviation used for in evaluation?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.0,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.35,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "9/9 query terms in answer"
+      }
+    },
+    {
+      "query": "How are evaluation timestamps recorded?",
+      "answer": "Based on the context, the answer to 'How are evaluation timestamps recorded?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How are evaluation timestamps recorded?",
+        "Document 2: Additional context related to How are evaluation timestamps recorded?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.4444444444444444,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.3111111111111111,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "5/5 query terms in answer"
+      }
+    },
+    {
+      "query": "What makes a query 'hard' vs 'easy'?",
+      "answer": "Based on the context, the answer to 'What makes a query 'hard' vs 'easy'?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What makes a query 'hard' vs 'easy'?",
+        "Document 2: Additional context related to What makes a query 'hard' vs 'easy'?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.375,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.29375,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the system handle missing context?",
+      "answer": "Based on the context, the answer to 'How does the system handle missing context?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the system handle missing context?",
+        "Document 2: Additional context related to How does the system handle missing context?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.4,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the purpose of evaluation explanations?",
+      "answer": "Based on the context, the answer to 'What is the purpose of evaluation explanations?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the purpose of evaluation explanations?",
+        "Document 2: Additional context related to What is the purpose of evaluation explanations?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2857142857142857,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.42142857142857143,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "How can I export evaluation reports?",
+      "answer": "Based on the context, the answer to 'How can I export evaluation reports?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How can I export evaluation reports?",
+        "Document 2: Additional context related to How can I export evaluation reports?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.0,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.2,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the role of the evaluation model?",
+      "answer": "Based on the context, the answer to 'What is the role of the evaluation model?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the role of the evaluation model?",
+        "Document 2: Additional context related to What is the role of the evaluation model?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.2222222222222222,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.40555555555555556,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    },
+    {
+      "query": "How does the framework ensure reproducibility?",
+      "answer": "Based on the context, the answer to 'How does the framework ensure reproducibility?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How does the framework ensure reproducibility?",
+        "Document 2: Additional context related to How does the framework ensure reproducibility?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.2857142857142857,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.27142857142857146,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "6/6 query terms in answer"
+      }
+    },
+    {
+      "query": "What is the best practice for query selection?",
+      "answer": "Based on the context, the answer to 'What is the best practice for query selection?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about What is the best practice for query selection?",
+        "Document 2: Additional context related to What is the best practice for query selection?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.5,
+      "completeness": 0.0,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.35,
+      "evaluation_details": {
+        "groundedness_explanation": "1/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "8/8 query terms in answer"
+      }
+    },
+    {
+      "query": "How are edge cases handled in evaluation?",
+      "answer": "Based on the context, the answer to 'How are edge cases handled in evaluation?' is that the information provided in the retrieved documents contains relevant details.",
+      "retrieved_context": [
+        "Document 1: Contains information about How are edge cases handled in evaluation?",
+        "Document 2: Additional context related to How are edge cases handled in evaluation?",
+        "Document 3: Supporting details for the query"
+      ],
+      "groundedness": 0.0,
+      "completeness": 0.18181818181818182,
+      "utilization": 0.0,
+      "relevancy": 1.0,
+      "total_score": 0.24545454545454548,
+      "evaluation_details": {
+        "groundedness_explanation": "0/2 claims supported by context",
+        "completeness_explanation": "1/1 query aspects covered",
+        "utilization_explanation": "0/2 sentences use context-specific info",
+        "relevancy_explanation": "7/7 query terms in answer"
+      }
+    }
+  ]
+}

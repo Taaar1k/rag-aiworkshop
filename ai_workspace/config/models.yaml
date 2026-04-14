@@ -1,0 +1,10 @@
+# Model aliases and paths for deployment
+models:
+  llm:
+    gpt-4:
+      file: "Llama-3-8B-Instruct-Q4_K_M.gguf"
+      path: "models/llm/Llama-3-8B-Instruct-Q4_K_M.gguf"
+  embeddings:
+    nomic-embed-text-v1.5:
+      file: "nomic-embed-text-v1.5.Q4_K_M.gguf"
+      path: "models/embeddings/nomic-embed-text-v1.5.Q4_K_M.gguf"

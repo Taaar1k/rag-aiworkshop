@@ -1,0 +1,28 @@
+RAG EVALUATION REPORT
+============================================================
+
+EXECUTIVE SUMMARY
+----------------------------------------
+Total Evaluations: 56
+Average Total Score: 0.345 (34.5%)
+
+METRIC BREAKDOWN
+----------------------------------------
+Groundedness: 0.277 (+/- 0.251)
+Completeness: 0.248 (+/- 0.152)
+Utilization: 0.000 (+/- 0.000)
+Relevancy: 1.000 (+/- 0.000)
+
+ASSESSMENT
+----------------------------------------
+POOR - RAG system requires significant improvements
+
+RECOMMENDATIONS
+----------------------------------------
+- Improve retrieval quality to enhance groundedness
+- Enhance answer generation to cover more query aspects
+- Better leverage retrieved context in responses
+
+============================================================
+Report generated: 2026-04-14T06:08:53.467996
+============================================================

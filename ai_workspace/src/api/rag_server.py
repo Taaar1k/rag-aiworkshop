@@ -1,0 +1,442 @@
+"""
+Shared RAG Server with FastAPI and Qdrant integration.
+Provides OpenAI-compatible endpoints for RAG operations.
+"""
+
+import os
+import sys
+import logging
+from typing import List, Dict, Optional, Any
+from pathlib import Path
+from datetime import datetime
+
+from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+import qdrant_client
+from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FilterSelector, FieldCondition, MatchValue
+
+# Add src to path for imports
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
+try:
+    from core.config import Settings
+except ImportError:
+    from ..core.config import Settings
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Shared RAG API",
+    description="OpenAI-compatible RAG server with Qdrant vector storage",
+    version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global instances
+settings = Settings()
+qdrant_client_instance: Optional[qdrant_client.QdrantClient] = None
+embedding_model_instance: Any = None
+llm_model_instance: Any = None
+
+
+# Pydantic Models for OpenAI-compatible API
+class Message(BaseModel):
+    role: str
+    content: str
+
+
+class ChatCompletionRequest(BaseModel):
+    model: str = "shared-rag-v1"
+    messages: List[Message]
+    temperature: float = Field(default=0.7, ge=0.0, le=1.0)
+    top_p: float = Field(default=1.0, ge=0.0, le=1.0)
+    n: int = Field(default=1, ge=1, le=10)
+    max_tokens: int = Field(default=512, ge=1, le=4096)
+    stream: bool = False
+    stop: Optional[List[str]] = None
+    presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
+    frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
+
+
+class ChatCompletionResponse(BaseModel):
+    id: str
+    object: str = "chat.completion"
+    created: int
+    model: str
+    choices: List[Dict[str, Any]]
+    usage: Dict[str, int]
+
+
+class EmbeddingRequest(BaseModel):
+    model: str = "nomic-embed-text-v1.5"
+    input: str | List[str]
+    encoding_format: str = "float"
+
+
+class EmbeddingResponse(BaseModel):
+    object: str = "list"
+    data: List[Dict[str, Any]]
+    model: str
+    usage: Dict[str, int]
+
+
+class Document(BaseModel):
+    id: str
+    text: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RAGQueryRequest(BaseModel):
+    query: str
+    top_k: int = Field(default=5, ge=1, le=100)
+    filters: Optional[Dict[str, Any]] = None
+    temperature: float = Field(default=0.7, ge=0.0, le=1.0)
+    max_tokens: int = Field(default=512, ge=1, le=4096)
+
+
+class RAGQueryResponse(BaseModel):
+    answer: str
+    sources: List[Dict[str, Any]]
+    metadata: Dict[str, Any]
+
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for the RAG server."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0"
+    }
+
+
+# OpenAI-compatible endpoints
+@app.post("/v1/chat/completions")
+async def chat_completions(request: ChatCompletionRequest):
+    """
+    OpenAI-compatible endpoint for chat completions with RAG.
+    Uses Qdrant for vector search and LLM for response generation.
+    """
+    try:
+        # Extract query from messages
+        query = request.messages[-1].content if request.messages else ""
+        
+        # Perform RAG query
+        rag_response = perform_rag_query(
+            query=query,
+            top_k=request.top_k if hasattr(request, 'top_k') else 5,
+            temperature=request.temperature
+        )
+        
+        return ChatCompletionResponse(
+            id=f"chatcmpl-{int(datetime.now().timestamp())}",
+            created=int(datetime.now().timestamp()),
+            model=request.model,
+            choices=[{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": rag_response["answer"]
+                },
+                "finish_reason": "stop"
+            }],
+            usage={
+                "prompt_tokens": len(query.split()),
+                "completion_tokens": len(rag_response["answer"].split()),
+                "total_tokens": len(query.split()) + len(rag_response["answer"].split())
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error in chat completions: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/embeddings")
+async def create_embeddings(request: EmbeddingRequest):
+    """
+    OpenAI-compatible endpoint for embedding generation.
+    Uses sentence-transformers for embedding generation.
+    """
+    try:
+        inputs = request.input if isinstance(request.input, list) else [request.input]
+        
+        # Generate embeddings
+        embeddings = []
+        for text in inputs:
+            embedding = generate_embedding(text)
+            embeddings.append({
+                "object": "embedding",
+                "embedding": embedding,
+                "index": len(embeddings)
+            })
+        
+        return EmbeddingResponse(
+            object="list",
+            data=embeddings,
+            model=request.model,
+            usage={
+                "prompt_tokens": sum(len(text.split()) for text in inputs),
+                "total_tokens": sum(len(text.split()) for text in inputs)
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error in embeddings: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# RAG-specific endpoints
+@app.post("/rag/query")
+async def rag_query(request: RAGQueryRequest):
+    """
+    Custom RAG query endpoint with vector search and LLM generation.
+    """
+    try:
+        response = perform_rag_query(
+            query=request.query,
+            top_k=request.top_k,
+            temperature=request.temperature
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Error in RAG query: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/rag/index")
+async def index_document(document: Document):
+    """
+    Index a document into the vector store.
+    """
+    try:
+        # Generate embedding for the document
+        embedding = generate_embedding(document.text)
+        
+        # Store in Qdrant
+        qdrant_client_instance.upsert(
+            collection_name="rag_documents",
+            points=[PointStruct(
+                id=document.id,
+                vector=embedding,
+                payload={
+                    "text": document.text,
+                    **document.metadata
+                }
+            )]
+        )
+        
+        return {"status": "success", "document_id": document.id}
+    except Exception as e:
+        logger.error(f"Error indexing document: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Utility functions
+def initialize_qdrant():
+    """Initialize Qdrant client and create collection if not exists."""
+    global qdrant_client_instance
+    
+    host = os.getenv("QDRANT_HOST", "localhost")
+    port = int(os.getenv("QDRANT_PORT", 6333))
+    
+    qdrant_client_instance = qdrant_client.QdrantClient(host=host, port=port)
+    
+    # Create collection if it doesn't exist
+    collection_name = "rag_documents"
+    if not qdrant_client_instance.collection_exists(collection_name):
+        qdrant_client_instance.create_collection(
+            collection_name=collection_name,
+            vectors_config=VectorParams(
+                size=768,  # Default embedding dimension
+                distance=Distance.COSINE
+            )
+        )
+        logger.info(f"Created Qdrant collection: {collection_name}")
+    
+    return qdrant_client_instance
+
+
+def initialize_embedding_model():
+    """Initialize sentence-transformers model."""
+    global embedding_model_instance
+    
+    try:
+        from sentence_transformers import SentenceTransformer
+        
+        model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+        embedding_model_instance = SentenceTransformer(model_name)
+        logger.info(f"Initialized embedding model: {model_name}")
+        
+        return embedding_model_instance
+    except Exception as e:
+        logger.error(f"Failed to initialize embedding model: {str(e)}")
+        raise
+
+
+def generate_embedding(text: str) -> List[float]:
+    """Generate embedding for a single text."""
+    if embedding_model_instance is None:
+        initialize_embedding_model()
+    
+    embedding = embedding_model_instance.encode(text)
+    return embedding.tolist()
+
+
+def initialize_llm_model():
+    """Initialize GGUF model via llama.cpp."""
+    global llm_model_instance
+    
+    try:
+        from llama_cpp import Llama
+        
+        model_path = os.getenv("LLM_MODEL_PATH", "models/llm/Llama-3-8B-Instruct-Q4_K_M.gguf")
+        
+        llm_model_instance = Llama(
+            model_path=model_path,
+            n_ctx=2048,
+            n_threads=4,
+            n_gpu_layers=0  # CPU only for now
+        )
+        
+        logger.info(f"Initialized LLM model: {model_path}")
+        return llm_model_instance
+    except Exception as e:
+        logger.error(f"Failed to initialize LLM model: {str(e)}")
+        # Fallback to API-based LLM if local model fails
+        logger.info("Falling back to API-based LLM")
+        return None
+
+
+def perform_rag_query(query: str, top_k: int = 5, temperature: float = 0.7) -> Dict[str, Any]:
+    """
+    Perform RAG query: vector search + LLM generation.
+    """
+    # Search vector store
+    if qdrant_client_instance is None:
+        initialize_qdrant()
+    
+    # Generate query embedding
+    query_embedding = generate_embedding(query)
+    
+    # Search Qdrant
+    try:
+        search_results = qdrant_client_instance.search(
+            collection_name="rag_documents",
+            query_vector=query_embedding,
+            limit=top_k
+        )
+    except Exception as e:
+        logger.warning(f"Qdrant search failed: {str(e)}, returning empty results")
+        search_results = []
+    
+    # Build context from search results
+    context = "\n\n".join([hit.payload.get("text", "") for hit in search_results])
+    sources = [
+        {
+            "id": hit.id,
+            "score": hit.score,
+            "text": hit.payload.get("text", "")[:200] + "..."
+        }
+        for hit in search_results
+    ]
+    
+    # Generate response with LLM
+    if llm_model_instance is None:
+        initialize_llm_model()
+    
+    if llm_model_instance:
+        # Use local LLM
+        prompt = f"""Context: {context}
+
+Question: {query}
+
+Answer:"""
+        
+        response = llm_model_instance(
+            prompt,
+            max_tokens=512,
+            temperature=temperature
+        )
+        
+        answer = response["choices"][0]["text"].strip()
+    else:
+        # Fallback: use retrieved context as answer
+        answer = f"Based on the retrieved documents:\n\n{context}\n\nQuestion: {query}"
+    
+    return {
+        "answer": answer,
+        "sources": sources,
+        "metadata": {
+            "timestamp": datetime.now().isoformat(),
+            "query": query,
+            "top_k": top_k
+        }
+    }
+
+
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on server startup."""
+    logger.info("Starting RAG server...")
+    
+    # Initialize Qdrant
+    try:
+        initialize_qdrant()
+        logger.info("Qdrant initialized successfully")
+    except Exception as e:
+        logger.warning(f"Qdrant initialization failed: {str(e)}")
+    
+    # Initialize embedding model
+    try:
+        initialize_embedding_model()
+        logger.info("Embedding model initialized successfully")
+    except Exception as e:
+        logger.error(f"Embedding model initialization failed: {str(e)}")
+    
+    # Initialize LLM model (optional)
+    try:
+        initialize_llm_model()
+        logger.info("LLM model initialized successfully")
+    except Exception as e:
+        logger.warning(f"LLM model initialization failed: {str(e)}")
+    
+    logger.info("RAG server started successfully")
+
+
+# Shutdown event
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on server shutdown."""
+    logger.info("Shutting down RAG server...")
+    
+    if qdrant_client_instance:
+        qdrant_client_instance.close()
+    
+    logger.info("RAG server shutdown complete")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "rag_server:app",
+        host=settings.host,
+        port=settings.port,
+        reload=True
+    )

@@ -1,0 +1,59 @@
+# Memory Persistence Configuration
+# Controls session state persistence for RAG system
+
+storage:
+  # Path to persistence file (JSON format)
+  path: "./ai_workspace/memory/persistence.json"
+  
+  # Storage type: "file" or "memory"
+  type: "file"
+  
+  # Auto-save changes immediately
+  auto_save: true
+
+# Data retention settings
+retention:
+  # Maximum conversations to retain per session
+  max_conversations: 100
+  
+  # Maximum messages per conversation
+  max_messages_per_session: 1000
+  
+  # Session TTL in hours (0 = no expiration)
+  session_ttl_hours: 168  # 7 days
+
+# Performance settings
+performance:
+  # Enable in-memory fallback for development
+  use_memory_fallback: false
+  
+  # Maximum state size in MB (0 = no limit)
+  max_state_size_mb: 100
+  
+  # Enable compression for large states
+  enable_compression: false
+
+# Integration settings
+integration:
+  # Enable conversation history persistence
+  conversation_history: true
+  
+  # Enable user context persistence
+  user_context: true
+  
+  # Enable RAG state persistence
+  rag_state: true
+  
+  # Enable session state persistence
+  session_state: true
+
+# Debug settings
+debug:
+  # Log save/load operations
+  log_operations: true
+  
+  # Log performance metrics
+  log_performance: true
+  
+  # Enable verbose output
+  verbose: false

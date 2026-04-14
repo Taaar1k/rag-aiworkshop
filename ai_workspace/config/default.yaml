@@ -1,0 +1,19 @@
+llm:
+  endpoint: "http://localhost:8080/v1/chat/completions"
+  model_name: "Qwen3.5-35B-A3B-APEX-Compact"
+  timeout: 30
+  max_tokens: 2048
+
+# Embeddings configuration moved to config/embedding_config.yaml
+# Please refer to that file for embedding-specific settings
+
+retrieval:
+  top_k: 5
+  hybrid_search: true
+  rerank: true
+  chunk_size: 512
+  chunk_overlap: 50
+
+server:
+  host: "0.0.0.0"
+  port: 8000

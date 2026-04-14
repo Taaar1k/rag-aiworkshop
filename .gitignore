@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Model weights (download separately — see README)
+models/
+*.gguf
+*.bin
+*.safetensors
+
+# Local data / runtime
+logs/
+*.log
+chroma_db/
+*.sqlite
+*.db
+persistence.json
+ai_workspace/ai_workspace/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Roo Code (IDE-specific; contains local paths)
+.roo/
+
+# OS
+Thumbs.db
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
+# Pytest cache at repo root
+/.pytest_cache/
+
+# Personal notes (not shipped)
+claude_translation.txt

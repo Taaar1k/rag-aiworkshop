@@ -1,0 +1,98 @@
+# Service Management Configuration for RAG Core System
+# This file defines how services are started, monitored, and stopped
+
+services:
+  mcp_server:
+    name: "MCP Server"
+    enabled: true
+    command:
+      - "python"
+      - "src/mcp_server.py"
+    health_check:
+      enabled: true
+      endpoint: "http://localhost:8000/health"
+      interval: 1.0
+      timeout: 30.0
+    startup_timeout: 15.0
+    shutdown_timeout: 5.0
+    dependencies: []
+
+  embedding_model:
+    name: "Embedding Model"
+    enabled: true
+    command:
+      - "python"
+      - "-c"
+      - "from sentence_transformers import SentenceTransformer; print('ready')"
+    health_check:
+      enabled: false
+      endpoint: null
+      interval: null
+      timeout: null
+    startup_timeout: 60.0
+    shutdown_timeout: 2.0
+    dependencies: []
+
+  llm:
+    name: "LLM Service"
+    enabled: true
+    command:
+      - "llama.cpp"
+      - "-m"
+      - "models/llm/Llama-3-8B-Instruct-Q4_K_M.gguf"
+      - "-c"
+      - "2048"
+    health_check:
+      enabled: true
+      endpoint: "http://localhost:8080/health"
+      interval: 1.0
+      timeout: 30.0
+    startup_timeout: 30.0
+    shutdown_timeout: 5.0
+    dependencies: []
+
+# Global settings
+global:
+  log_level: "INFO"
+  log_file: "logs/core_services.log"
+  start_order:
+    - "llm"
+    - "embedding_model"
+    - "mcp_server"
+  stop_order:
+    - "mcp_server"
+    - "embedding_model"
+    - "llm"
+  graceful_shutdown_timeout: 5.0
+  force_kill_after: 10.0
+
+# Platform-specific configurations
+platform:
+  linux:
+    process_group: true
+    signal_termination: true
+  macos:
+    process_group: true
+    signal_termination: true
+  windows:
+    process_group: false
+    signal_termination: false
+    startup_timeout_multiplier: 1.5
+
+# Health check settings
+health_check:
+  retry_count: 3
+  retry_delay: 0.5
+  success_threshold: 1
+  failure_threshold: 3
+
+# Dependency validation
+dependencies:
+  validate_before_start: true
+  required_files:
+    - "models/llm/Llama-3-8B-Instruct-Q4_K_M.gguf"
+    - "models/embeddings"
+  required_packages:
+    - "requests"
+    - "torch"
+    - "sentence_transformers"
