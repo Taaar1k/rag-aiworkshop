@@ -3,11 +3,11 @@
 <!-- === DYNAMIC BADGE BAR === -->
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-v2026.04.19-6963ff?style=flat-square&logo=github&logoColor=white)](#release-notes) &nbsp;
-[![Release Date](https://img.shields.io/badge/release-2026--04--19-6963ff?style=flat-square)](#release-notes) &nbsp;
+[![Version](https://img.shields.io/badge/version-v2026.04.20-6963ff?style=flat-square&logo=github&logoColor=white)](#release-notes) &nbsp;
+[![Release Date](https://img.shields.io/badge/release-2026--04--20-6963ff?style=flat-square)](#release-notes) &nbsp;
 [![License: MIT](https://img.shields.io/badge/License-MIT-6963ff?style=flat-square)](./LICENSE) &nbsp;
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8+-6963ff?style=flat-square)](https://www.python.org/) &nbsp;
-[![Tests: 293+](https://img.shields.io/badge/Tests-293+-6963ff?style=flat-square)](#testing)
+[![Tests: 312+](https://img.shields.io/badge/Tests-312+-6963ff?style=flat-square)](#testing)
 
 </div>
 
@@ -73,9 +73,9 @@ Every feature below was planned, implemented, tested, and verified by agents fol
 │  │ Retriever    │  │ Reranker     │  │ (Neo4j)          │   │
 │  │ (BM25+Vector)│  │              │  │                  │   │
 │  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘   │
-└─────────┼─────────────────┼────────────────────┼────────────┘
-          │                 │                    │
-┌─────────▼─────────────────▼────────────────────▼────────────┐
+└─────────┼─────────────────┼───────────────────┼─────────────┘
+          │                 │                   │
+┌─────────▼─────────────────▼───────────────────▼─────────────┐
 │                    MEMORY LAYER                             │
 │  ┌──────────────────┐  ┌─────────────────────────────────┐  │
 │  │ ChromaDB         │  │ Qdrant (опціонально)            │  │
@@ -93,22 +93,6 @@ Every feature below was planned, implemented, tested, and verified by agents fol
 └──────────────────────────────────────────────────────────────┘
 ```
 
-| Feature | Description |
-|---------|-------------|
-| **Hybrid Search** | BM25 + dense vectors fused via Reciprocal Rank Fusion (+18.5% accuracy vs vector-only) |
-| **Cross-Encoder Reranking** | `cross-encoder/ms-marco-MiniLM-L-6-v2` over top-k results |
-| **Agentic RAG** | Multi-agent loop with self-critique, planning, and query rewriting |
-| **Graph RAG** | Neo4j integration with entity extraction and graph traversal ([docs](./ai_workspace/docs/GRAPH_RAG.md)) |
-| **Multi-Modal** | CLIP-based image encoder for text-to-image cross-modal search |
-| **Evaluation** | MRR, NDCG, precision@k, recall@k with baseline reports ([results](./ai_workspace/evaluation_results/)) |
-| **Tenant Isolation** | Per-tenant filtering, row-level security, audit logging, JWT auth |
-| **MCP Server** | OpenAI-compatible `/v1/chat/completions` + MCP protocol support |
-| **Rate Limiting** | Configurable per-user limits (100 req/min anonymous, 1000 req/min authenticated) |
-| **Directory Scanning** | Automatic file change detection with incremental re-indexing |
-| **Health Checks** | Component-level diagnostics: `/health`, `/health/verbose`, `/metrics` |
-| **Shared RAG** | Python SDK, JS client, LM Studio plugin, VS Code extension |
-
-Detailed task files and evidence live in [`ai_workspace/memory/TASKS/`](./ai_workspace/memory/TASKS/).
 ---
 
 ## Tech Stack
@@ -125,19 +109,10 @@ Detailed task files and evidence live in [`ai_workspace/memory/TASKS/`](./ai_wor
 | **API** | FastAPI | OpenAI-compatible `/v1/chat/completions` |
 | **MCP Server** | FastMCP | Agent integration |
 | **Framework** | LangChain core | Orchestration layer |
+| **Rate Limiting** | `slowapi` | Per-user configurable limits |
+| **File Watching** | `watchfiles` + `IncrementalIndexManager` | Auto-reindex on file changes |
 
-- **LLM**: Llama-3-8B-Instruct (Q4_K_M GGUF) via [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python)
-- **Embeddings**: `nomic-embed-text-v1.5` (768-dim, multilingual-friendly) via `sentence-transformers`
-- **Vector store**: [`ChromaDB`](https://www.trychroma.com/) with persistent storage
-- **Keyword search**: BM25 (`rank-bm25`) + dense vectors fused via Reciprocal Rank Fusion
-- **Reranker**: `cross-encoder/ms-marco-MiniLM-L-6-v2` (sentence-transformers cross-encoder)
-- **Graph RAG**: [`Neo4j`](https://neo4j.com/) with entity extraction and graph traversal
-- **Multi-modal**: CLIP-based image encoder (`clip-vit-base-patch32`) for text↔image cross-modal search
-- **API**: FastAPI with OpenAI-compatible `/v1/chat/completions` + MCP server protocol
-- **Rate Limiting**: `slowapi` with per-user configurable limits
-- **Directory Scanning**: `watchfiles` + `IncrementalIndexManager` for automatic file change detection
-- **Health Monitoring**: Component-level checks (ChromaDB, Neo4j, llama.cpp, embedding server, scanner)
-- **Security**: Per-tenant isolation, audit logging, Bearer-token auth, JWT
+---
 
 ## Quick Start
 
@@ -308,16 +283,9 @@ cd ai_workspace
 .venv/bin/python -m pytest tests/test_multimodal_image_encoder.py -v
 ```
 
-**Current state (2026-04-19):** 293 passed · 11 failing · 5 skipped out of 309.
+**Current state (2026-04-20):** 312 passed · 8 failing · 8 deselected (integration). TASK-029 integration tests: 24/24 passing.
 
----
-
-The 11 failures are tracked in the task board. Integration tests are properly separated via `@pytest.mark.integration` and excluded from default runs via [`ai_workspace/pytest.ini`](ai_workspace/pytest.ini).
-
-=======
-**Current state (2026-04-19)**: 293+ passed · 0 failing (TASK-029 integration tests: 24/24 passing).
-The 11 failures are tracked as [TASK-017, TASK-018](./ai_workspace/memory/TASKS/) and are being resolved by the C.E.H. agent cluster itself — see the task board for live status.
-Integration tests (3 tests in `test_rag_server.py`) have been marked with `@pytest.mark.integration` and excluded from default runs via [`ai_workspace/pytest.ini`](./ai_workspace/pytest.ini).
+The 8 remaining unit-test failures are tracked as [TASK-017, TASK-018](./ai_workspace/memory/TASKS/) and are being resolved by the C.E.H. agent cluster itself — see the task board for live status. Integration tests are separated via `@pytest.mark.integration` and excluded from default runs via [`ai_workspace/pytest.ini`](./ai_workspace/pytest.ini).
 
 ---
 
@@ -365,7 +333,7 @@ rag-workshop/
 │   │   │   ├── js_client.js
 │   │   │   └── lm_studio_plugin.py
 │   │   └── mcp_server.py     # MCP server
-│   ├── tests/                # 309 tests, ~95% passing
+│   ├── tests/                # ~320 tests, ~97% passing
 │   ├── config/               # YAML configs
 │   │   ├── default.yaml
 │   │   ├── embedding_config.yaml
@@ -414,13 +382,9 @@ Each feature corresponds to a numbered task implemented by the C.E.H. agent clus
 | TASK-024 | Fix integration tests (7 passed, 1 skipped, 0 failed) | DONE |
 | TASK-025 | Directory Scanning & Incremental Indexing | PENDING |
 
-Each task file in [`ai_workspace/memory/TASKS/`](ai_workspace/memory/TASKS/) includes the objective, DoD checklist, evidence, and change log. This is what "evidence-gated autonomous development" actually looks like in practice — nothing hidden, nothing polished post-hoc.
-=======
-Every feature, fix, and integration in this repository was executed **fully autonomously** by a multi-agent cluster powered by **local Qwen LLMs** — ranging from **Qwen 35B** to **Qwen 80B MoE** — running entirely on-device with no external API calls.
+Every feature, fix, and integration above was executed **fully autonomously** by a multi-agent cluster (PM, Code, Debug, Writer, Scaut, Ask, Healer) running on **local Qwen LLMs** — from **Qwen 35B** to **Qwen 80B MoE**, entirely on-device, no external API calls.
 
-Each agent (PM, Code, Debug, Writer, Scaut, Ask, Healer) operated independently, planning, implementing, testing, and verifying its assigned tasks using evidence-gated execution. Every task file in [`ai_workspace/memory/TASKS/`](./ai_workspace/memory/TASKS/) contains the full objective, DoD checklist, test evidence, and change log — **the real audit trail, unedited**.
-
-This is what "evidence-gated autonomous development" looks like in practice: nothing hidden, nothing polished post-hoc. Just code, tests, and proof.
+Each task file in [`ai_workspace/memory/TASKS/`](./ai_workspace/memory/TASKS/) contains the objective, DoD checklist, test evidence, and change log — the real audit trail, unedited. This is what "evidence-gated autonomous development" looks like in practice: nothing hidden, nothing polished post-hoc. Just code, tests, and proof.
 
 ---
 

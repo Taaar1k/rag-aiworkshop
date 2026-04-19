@@ -61,3 +61,5 @@ credentials.json
 claude_translation.txt
 MEMORY.md
 ai_workspace/qdrant_storage/
+SPEC-2026-04-20-PRODUCTION-HARDENING.md
+SPEC-2026-04-20-FIX-MEMORY-LAYER.md
