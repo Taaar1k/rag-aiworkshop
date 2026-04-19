@@ -3,14 +3,20 @@ FastMCP RAG Server - MCP protocol implementation with LangChain and ChromaDB
 """
 import os
 import asyncio
+import json
+import logging
 from typing import Optional
 from pathlib import Path
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 
 from fastmcp import FastMCP
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 # MCP Server initialization
 mcp = FastMCP("rag-mcp-server")
@@ -19,7 +25,83 @@ mcp = FastMCP("rag-mcp-server")
 CHROMA_PERSIST_DIR = "./chroma_db"
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL_NAME", "nomic-ai/nomic-embed-text-v1.5")
 LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")
-LLM_MODEL = os.getenv("LLM_MODEL_NAME", "Llama-3-8B-Instruct")
+LLM_MODEL = os.getenv("LLM_MODEL_NAME", None)  # Will auto-detect if not set
+
+def detect_available_models(endpoint: str, timeout: int = 5) -> list[str]:
+    """
+    Detect available models from the LLM server's /v1/models endpoint.
+    
+    Supports OpenAI-compatible API format (LM Studio, Ollama, vLLM, etc.)
+    
+    Args:
+        endpoint: LLM chat/completions endpoint URL
+        timeout: Timeout in seconds for the request
+        
+    Returns:
+        List of available model IDs
+    """
+    # Extract base URL (remove /v1/chat/completions or similar path)
+    base_url = endpoint
+    for suffix in ["/v1/chat/completions", "/v1/completions", "/chat/completions", "/completions"]:
+        if endpoint.endswith(suffix):
+            base_url = endpoint[:-len(suffix)]
+            break
+    
+    models_url = f"{base_url}/v1/models"
+    
+    try:
+        req = Request(models_url, method="GET")
+        req.add_header("Content-Type", "application/json")
+        
+        with urlopen(req, timeout=timeout) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            
+        model_ids = []
+        
+        # Try different response formats
+        if "data" in data and isinstance(data["data"], list):
+            model_ids = [m["id"] if isinstance(m, dict) and "id" in m else m for m in data["data"]]
+        elif "models" in data and isinstance(data["models"], list):
+            model_ids = [m["id"] if isinstance(m, dict) and "id" in m else m for m in data["models"]]
+            
+        logger.info(f"Detected {len(model_ids)} models: {model_ids}")
+        return model_ids
+        
+    except (URLError, HTTPError, Exception) as e:
+        logger.warning(f"Could not detect models from {models_url}: {e}")
+        return []
+
+def get_default_model(endpoint: str) -> str:
+    """
+    Get the default model name. First tries to auto-detect from server,
+    then falls back to hardcoded default.
+    
+    Args:
+        endpoint: LLM endpoint URL
+        
+    Returns:
+        Model name to use
+    """
+    # If explicitly set via env var, use it
+    explicit_model = os.getenv("LLM_MODEL_NAME")
+    if explicit_model:
+        logger.info(f"Using explicitly configured model: {explicit_model}")
+        return explicit_model
+    
+    # Try to auto-detect
+    available = detect_available_models(endpoint)
+    if available:
+        default = available[0]
+        logger.info(f"Using auto-detected default model: {default}")
+        return default
+    
+    # Hardcoded fallback
+    fallback = "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"
+    logger.warning(f"No models detected, using hardcoded fallback: {fallback}")
+    return fallback
+
+# Auto-detect model at startup
+LLM_MODEL = get_default_model(LLM_ENDPOINT)
 
 # Global variables
 vector_store: Optional[Chroma] = None
@@ -197,9 +279,8 @@ async def add_document(file_path: str) -> str:
     try:
         doc_manager.load_documents(file_path)
         
-        if doc_manager.vector_store:
-            # Rebuild vector store with new document
-            doc_manager.create_vector_store()
+        # Create or rebuild vector store with new document
+        doc_manager.create_vector_store()
         
         return f"Document added successfully from {file_path}"
     

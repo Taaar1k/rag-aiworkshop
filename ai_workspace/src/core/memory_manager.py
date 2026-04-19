@@ -112,9 +112,8 @@ class VectorMemory(MemoryBase):
             metadata={"hnsw:space": "cosine"}
         )
         
-        # Create index on metadata fields
-        for field in self.config.metadata_index_fields:
-            self.collection.create_index(field)
+        # Metadata indexing is handled automatically by ChromaDB
+        # (create_index was deprecated/removed in newer versions)
     
     def _init_langchain_store(self):
         """Initialize LangChain vector store wrapper."""
