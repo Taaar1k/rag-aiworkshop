@@ -92,7 +92,7 @@ Every feature below was planned, implemented, tested, and verified by agents fol
 │  └──────────────────────┘  └──────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
 ```
-=======
+
 | Feature | Description |
 |---------|-------------|
 | **Hybrid Search** | BM25 + dense vectors fused via Reciprocal Rank Fusion (+18.5% accuracy vs vector-only) |
@@ -109,13 +109,10 @@ Every feature below was planned, implemented, tested, and verified by agents fol
 | **Shared RAG** | Python SDK, JS client, LM Studio plugin, VS Code extension |
 
 Detailed task files and evidence live in [`ai_workspace/memory/TASKS/`](./ai_workspace/memory/TASKS/).
->>>>>>> feature/research
-
 ---
 
 ## Tech Stack
 
-<<<<<<< HEAD
 | Component | Technology | Details |
 |-----------|------------|---------|
 | **LLM** | Llama-3-8B-Instruct (Q4_K_M GGUF) | via `llama-cpp-python`, configurable via env vars |
@@ -128,7 +125,7 @@ Detailed task files and evidence live in [`ai_workspace/memory/TASKS/`](./ai_wor
 | **API** | FastAPI | OpenAI-compatible `/v1/chat/completions` |
 | **MCP Server** | FastMCP | Agent integration |
 | **Framework** | LangChain core | Orchestration layer |
-=======
+
 - **LLM**: Llama-3-8B-Instruct (Q4_K_M GGUF) via [`llama-cpp-python`](https://github.com/abetlen/llama-cpp-python)
 - **Embeddings**: `nomic-embed-text-v1.5` (768-dim, multilingual-friendly) via `sentence-transformers`
 - **Vector store**: [`ChromaDB`](https://www.trychroma.com/) with persistent storage
@@ -141,9 +138,6 @@ Detailed task files and evidence live in [`ai_workspace/memory/TASKS/`](./ai_wor
 - **Directory Scanning**: `watchfiles` + `IncrementalIndexManager` for automatic file change detection
 - **Health Monitoring**: Component-level checks (ChromaDB, Neo4j, llama.cpp, embedding server, scanner)
 - **Security**: Per-tenant isolation, audit logging, Bearer-token auth, JWT
->>>>>>> feature/research
-
----
 
 ## Quick Start
 
@@ -314,7 +308,6 @@ cd ai_workspace
 .venv/bin/python -m pytest tests/test_multimodal_image_encoder.py -v
 ```
 
-<<<<<<< HEAD
 **Current state (2026-04-19):** 293 passed · 11 failing · 5 skipped out of 309.
 
 The 11 failures are tracked in the task board. Integration tests are properly separated via `@pytest.mark.integration` and excluded from default runs via [`ai_workspace/pytest.ini`](ai_workspace/pytest.ini).
@@ -322,7 +315,6 @@ The 11 failures are tracked in the task board. Integration tests are properly se
 **Current state (2026-04-19)**: 293+ passed · 0 failing (TASK-029 integration tests: 24/24 passing).
 The 11 failures are tracked as [TASK-017, TASK-018](./ai_workspace/memory/TASKS/) and are being resolved by the C.E.H. agent cluster itself — see the task board for live status.
 Integration tests (3 tests in `test_rag_server.py`) have been marked with `@pytest.mark.integration` and excluded from default runs via [`ai_workspace/pytest.ini`](./ai_workspace/pytest.ini).
->>>>>>> feature/research
 
 ---
 
@@ -394,7 +386,6 @@ rag-workshop/
 
 ## How This Was Built
 
-<<<<<<< HEAD
 Each feature corresponds to a numbered task implemented by the C.E.H. agent cluster:
 
 | Task | What | Status |
@@ -427,7 +418,6 @@ Every feature, fix, and integration in this repository was executed **fully auto
 Each agent (PM, Code, Debug, Writer, Scaut, Ask, Healer) operated independently, planning, implementing, testing, and verifying its assigned tasks using evidence-gated execution. Every task file in [`ai_workspace/memory/TASKS/`](./ai_workspace/memory/TASKS/) contains the full objective, DoD checklist, test evidence, and change log — **the real audit trail, unedited**.
 
 This is what "evidence-gated autonomous development" looks like in practice: nothing hidden, nothing polished post-hoc. Just code, tests, and proof.
->>>>>>> feature/research
 
 ---
 
