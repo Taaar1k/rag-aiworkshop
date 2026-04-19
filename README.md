@@ -310,7 +310,10 @@ cd ai_workspace
 
 **Current state (2026-04-19):** 293 passed · 11 failing · 5 skipped out of 309.
 
+---
+
 The 11 failures are tracked in the task board. Integration tests are properly separated via `@pytest.mark.integration` and excluded from default runs via [`ai_workspace/pytest.ini`](ai_workspace/pytest.ini).
+
 =======
 **Current state (2026-04-19)**: 293+ passed · 0 failing (TASK-029 integration tests: 24/24 passing).
 The 11 failures are tracked as [TASK-017, TASK-018](./ai_workspace/memory/TASKS/) and are being resolved by the C.E.H. agent cluster itself — see the task board for live status.
