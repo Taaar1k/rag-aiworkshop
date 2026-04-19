@@ -9,15 +9,15 @@ def test_embedding():
         print("Testing embedding model...")
         embedder = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
         
-        # Test Ukrainian text
-        ukrainian_texts = [
-            "Який дохід мала компанія LlamaCorp?",
-            "Де заснована компанія LlamaCorp?",
-            "Що є головним продуктом компанії?"
+        # Test English text
+        english_texts = [
+            "What was LlamaCorp's revenue?",
+            "Where was LlamaCorp founded?",
+            "What is the company's main product?"
         ]
         
-        embeddings = embedder.encode(ukrainian_texts)
-        print(f"✅ Successfully created embeddings for {len(ukrainian_texts)} Ukrainian texts")
+        embeddings = embedder.encode(english_texts)
+        print(f"✅ Successfully created embeddings for {len(english_texts)} English texts")
         print(f"Embedding shape: {embeddings.shape}")
         print(f"Embedding dtype: {embeddings.dtype}")
         return True

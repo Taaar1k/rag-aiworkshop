@@ -1,4 +1,4 @@
-# TASK-002: Рефакторинг проекту під сучасний RAG MCP стек
+# TASK-002: Project refactoring for modern RAG MCP stack
 
 ## Metadata
 - status: in_progress
@@ -8,33 +8,33 @@
 - last_updated: 2026-04-13
 
 ## Objective
-Перехід проекту на сучасну архітектуру MCP RAG сервера з використанням FastMCP, LangChain та ChromaDB для покращення масштабованості та продуктивності.
+Transition project to modern MCP RAG server architecture using FastMCP, LangChain, and ChromaDB to improve scalability and performance.
 
 ## Background
-Аналіз сучасних RAG MCP серверів показав, що найкращі практики включають:
-- FastMCP для створення серверів
-- LangChain для оркестрації RAG pipeline
-- ChromaDB для векторного зберігання
-- llama.cpp для локальної генерації
+Analysis of modern RAG MCP servers showed that best practices include:
+- FastMCP for server creation
+- LangChain for RAG pipeline orchestration
+- ChromaDB for vector storage
+- llama.cpp for local generation
 
 ## Current Configuration
-- **LLM Model**: Qwen3.5-35B-A3B-APEX-Compact.gguf (порт 8080)
-- **Embedding Model**: nomic-embed-text-v1.5.Q4_K_M.gguf (порт 8090)
-- **RAG System**: Вбудована система RAG з llama.cpp
+- **LLM Model**: Qwen3.5-35B-A3B-APEX-Compact.gguf (port 8080)
+- **Embedding Model**: nomic-embed-text-v1.5.Q4_K_M.gguf (port 8090)
+- **RAG System**: Built-in RAG system with llama.cpp
 
 ## Checklist
-- [x] **Analysis** - Огляд поточної архітектури
-- [x] **Analysis** - Визначення міцних точок
-- [x] **Design** - Створення архітектури FastMCP сервера
-- [x] **Design** - Визначення інструментів MCP
-- [x] **Design** - Планування міграції на ChromaDB
-- [x] **Implement** - Реалізація FastMCP сервера
-- [x] **Implement** - Інтеграція з LangChain
-- [x] **Implement** - Налаштування ChromaDB
-- [x] **Test** - Тестування всіх інструментів
-- [ ] **Test** - Валидація RAG pipeline
-- [ ] **Document** - Оновлення документації
-- [ ] **Deploy** - Впровадження в продакшн
+- [x] **Analysis** - Review current architecture
+- [x] **Analysis** - Identify strengths
+- [x] **Design** - Create FastMCP server architecture
+- [x] **Design** - Define MCP tools
+- [x] **Design** - Plan ChromaDB migration
+- [x] **Implement** - Implement FastMCP server
+- [x] **Implement** - Integrate with LangChain
+- [x] **Implement** - Configure ChromaDB
+- [x] **Test** - Test all tools
+- [ ] **Test** - Validate RAG pipeline
+- [ ] **Document** - Update documentation
+- [ ] **Deploy** - Deploy to production
 
 ## Technical Requirements
 - FastMCP >= 1.0.0
@@ -43,11 +43,11 @@
 - llama-cpp-python >= 0.2.0
 
 ## Success Criteria
-- ✅ MCP сервер працює через FastMCP
-- ✅ Інструменти search() та ask() функціонують
-- ✅ ChromaDB зберігає вектори персистентно
-- ✅ LLM Qwen3.5 генерує відповіді
-- ✅ Час відповіді < 2 секунди
+- ✅ MCP server works through FastMCP
+- ✅ search() and ask() tools function
+- ✅ ChromaDB stores vectors persistently
+- ✅ LLM Qwen3.5 generates responses
+- ✅ Response time < 2 seconds
 
 ## Dependencies
 - TASK-001: Визначення першої задачі (виконано)

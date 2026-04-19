@@ -1,4 +1,4 @@
-# RAG з llama.cpp — PROJECT_STATE
+# RAG with llama.cpp — PROJECT_STATE
 
 ## Metadata
 - project_name: rag-llama-local
@@ -7,9 +7,9 @@
 - author: PM_LOCAL_SOLO_MASTER
 
 ## Project Goals
-1. Реалізувати локальний RAG система на базі llama.cpp
-2. Підтримка української мови через багатомовні ембединги
-3. Економія ресурсів (RAM/VRAM) через RAG підхід
+1. Implement local RAG system based on llama.cpp
+2. Support Ukrainian language through multilingual embeddings
+3. Resource savings (RAM/VRAM) through RAG approach
 
 ## Current Phase
 **IN_PROGRESS** — Multi-Modal RAG Implementation Complete
@@ -23,34 +23,34 @@
 - All 18 tests passing
 
 ## Architecture
-- LLM: Llama-3-8B-Instruct-Q4_K_M.gguf (готово ✅)
+- LLM: Llama-3-8B-Instruct-Q4_K_M.gguf (ready ✅)
 - Embedding: nomic-ai/nomic-embed-text-v1.5.Q4_K_M.gguf (local: `./models/embeddings/` — download via huggingface_hub)
 - Framework: llama-cpp-python + sentence-transformers
-- Vector DB: in-memory (numpy) або ChromaDB (опціонально)
+- Vector DB: in-memory (numpy) or ChromaDB (optional)
 
 ## Global Blockers
 | ID | Blocker | Status |
 |----|---------|--------|
-| B01 | Модель ембедингів відсутня | RESOLVED ✅ |
+| B01 | Embedding model missing | RESOLVED ✅ |
 
 ## Dependencies
-- Python venv (готово ✅)
-- llama-cpp-python (готово ✅)
-- sentence-transformers (готово ✅)
+- Python venv (ready ✅)
+- llama-cpp-python (ready ✅)
+- sentence-transformers (ready ✅)
 
 ## Risk Assessment
-- R1: Неправильний вибір моделі ембедингів для української мови (низький ризик)
-- R2: Недостатньо пам'яті для великої кількості документів (середній ризик)
+- R1: Incorrect choice of embedding model for Ukrainian language (low risk)
+- R2: Insufficient memory for large number of documents (medium risk)
 
 ## Next Milestone
-1. Завантажити модель ембедингів
-2. Запустити тестовий приклад RAG
-3. Перевірити роботу з українським текстом
+1. Download embedding model
+2. Run test RAG example
+3. Check work with Ukrainian text
 
 ## Change Log
-- 2025-04-13: Initital state created by PM_MASTER
-- 2025-04-13: Модель ембедингів знайдено (B01 RESOLVED)
-- 2025-04-13: TASK-002 DONE — test_llama_embedding.py працює (768-dim, 51.66ms)
+- 2025-04-13: Initial state created by PM_MASTER
+- 2025-04-13: Embedding model found (B01 RESOLVED)
+- 2025-04-13: TASK-002 DONE — test_llama_embedding.py works (768-dim, 51.66ms)
 - 2026-04-14: TASK-012 DONE — Multi-Modal Support implemented (CLIP encoder, unified embedding space, cross-modal search, all tests passing)
 - 2026-04-18: TASK-021 DONE — Fixed import path in test_security_integration.py (ai_workspace.src → src)
 - 2026-04-18: TASK-022 DONE — Added PyJWT>=2.0.0 to requirements_mcp.txt, installed dependency

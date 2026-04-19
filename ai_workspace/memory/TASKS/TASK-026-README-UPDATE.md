@@ -171,7 +171,7 @@ This task requires the Writer agent to:
 | [`ai_workspace/docs/DIRECTORY_SCANNING.md`](ai_workspace/docs/DIRECTORY_SCANNING.md) | Directory scanning feature |
 | [`ai_workspace/docs/UKRAINIAN_OVERVIEW.md`](ai_workspace/docs/UKRAINIAN_OVERVIEW.md) | Full system overview in Ukrainian |
 | [`ai_workspace/docs/DIRECTORY_SCANNING_RESEARCH.md`](ai_workspace/docs/DIRECTORY_SCANNING_RESEARCH.md) | Research behind directory scanning |
-| [`ai_workspace/INSTRUCTIONS.md`](ai_workspace/INSTRUCTIONS.md) | Setup and launch instructions |
+| [`ai_workspace/SETUP_GUIDE.md`](ai_workspace/SETUP_GUIDE.md) | Setup and launch instructions |
 | [`ai_workspace/memory/PROJECT_STATE.md`](ai_workspace/memory/PROJECT_STATE.md) | PM-owned project state |
 
 ## 5. Deliverables

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Комплексний тестовий скрипт для тестування всіх компонентів RAG системи
+Comprehensive test script for testing all RAG system components
 """
 import requests
 import json
@@ -14,17 +14,17 @@ class RAGSystemTester:
         self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
     def log(self, service, status, message):
-        """Логування результатів тесту"""
+        """Test results logging"""
         symbol = "✅" if status == "OK" else "❌"
         print(f"{symbol} {service:30} [{status:6}] {message}")
         self.results[service] = {"status": status, "message": message}
         
     def test_qdrant(self):
-        """Тест Qdrant вектор-бази"""
+        """Test Qdrant vector database"""
         try:
             url = "http://localhost:6333/collections"
             response = requests.get(url, timeout=5)
-            if response.status_code in [200, 404]:  # 404 OK для порожньої БД
+            if response.status_code in [200, 404]:  # 404 OK for empty DB
                 self.log("Qdrant", "OK", f"Status: {response.status_code}")
                 return True
             else:
@@ -38,7 +38,7 @@ class RAGSystemTester:
             return False
     
     def test_llm_server(self):
-        """Тест LLM Server"""
+        """Test LLM Server"""
         try:
             url = "http://localhost:8080/v1/models"
             response = requests.get(url, timeout=5)
@@ -59,7 +59,7 @@ class RAGSystemTester:
             return False
     
     def test_embedding_server(self):
-        """Тест Embedding Server"""
+        """Test Embedding Server"""
         try:
             url = "http://localhost:8090/v1/models"
             response = requests.get(url, timeout=5)
@@ -80,7 +80,7 @@ class RAGSystemTester:
             return False
     
     def test_embedding_endpoint(self):
-        """Тест embedding endpoint"""
+        """Test embedding endpoint"""
         try:
             url = "http://localhost:8090/v1/embeddings"
             payload = {
@@ -108,7 +108,7 @@ class RAGSystemTester:
             return False
     
     def test_rag_api_health(self):
-        """Тест RAG API здоров'я"""
+        """Test RAG API health"""
         try:
             url = "http://localhost:8000/health"
             response = requests.get(url, timeout=30)
@@ -126,7 +126,7 @@ class RAGSystemTester:
             return False
     
     def test_rag_api_metrics(self):
-        """Тест RAG API метрик"""
+        """Test RAG API metrics"""
         try:
             url = "http://localhost:8000/metrics"
             response = requests.get(url, timeout=10)
@@ -144,7 +144,7 @@ class RAGSystemTester:
             return False
     
     def test_chat_completion(self):
-        """Тест chat completions endpoint"""
+        """Test chat completions endpoint"""
         try:
             url = "http://localhost:8000/v1/chat/completions"
             payload = {
@@ -176,7 +176,7 @@ class RAGSystemTester:
             return False
     
     def test_rag_query(self):
-        """Тест RAG запиту"""
+        """Test RAG query"""
         try:
             url = "http://localhost:8000/rag/query"
             payload = {
@@ -199,29 +199,29 @@ class RAGSystemTester:
             return False
     
     def run_all_tests(self):
-        """Запустити всі тести"""
+        """Run all tests"""
         print("\n" + "="*70)
         print(f"🧪 RAG SYSTEM COMPLETE TEST | {self.timestamp}")
         print("="*70 + "\n")
         
-        # Тести інфраструктури
+        # Infrastructure tests
         print("📡 INFRASTRUCTURE TESTS:")
         qdrant_ok = self.test_qdrant()
         llm_ok = self.test_llm_server()
         embedding_ok = self.test_embedding_server()
         
-        # Функціональні тести
+        # Functional tests
         print("\n🔧 FUNCTIONAL TESTS:")
         embedding_endpoint_ok = self.test_embedding_endpoint() if embedding_ok else False
         
-        # Тести RAG API
+        # RAG API tests
         print("\n🚀 RAG API TESTS:")
         health_ok = self.test_rag_api_health()
         metrics_ok = self.test_rag_api_metrics() if health_ok else False
         chat_ok = self.test_chat_completion() if health_ok else False
         query_ok = self.test_rag_query() if health_ok else False
         
-        # Резюме
+        # Summary
         print("\n" + "="*70)
         print("📊 TEST SUMMARY")
         print("="*70)

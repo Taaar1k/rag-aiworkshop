@@ -52,16 +52,16 @@ def main():
     
     test_documents = [
         Document(
-            page_content="Штучний інтелект (ШІ) — це галузь комп'ютерних наук, яка займається створенням систем, здатних виконувати завдання, які зазвичай вимагають людської інтелектуальної діяльності.",
-            metadata={"source": "test/ai_ukrainian.txt", "topic": "ai", "language": "uk"}
+            page_content="Artificial intelligence (AI) is a field of computer science that deals with creating systems capable of performing tasks that typically require human intellectual activity.",
+            metadata={"source": "test/ai_english.txt", "topic": "ai", "language": "en"}
         ),
         Document(
             page_content="Machine learning is a subset of artificial intelligence that provides systems the ability to automatically learn and improve from experience.",
             metadata={"source": "test/ml_english.txt", "topic": "ml", "language": "en"}
         ),
         Document(
-            page_content="Нейронні мережі — це обчислювальні системи, що надихаються біологічними нейронами та властивостями людського мозку.",
-            metadata={"source": "test/neural_ukrainian.txt", "topic": "neural", "language": "uk"}
+            page_content="Neural networks are computational systems inspired by biological neurons and the properties of the human brain.",
+            metadata={"source": "test/neural_english.txt", "topic": "neural", "language": "en"}
         ),
         Document(
             page_content="Vector databases store data as high-dimensional vectors and are used for similarity search in RAG systems.",
@@ -81,9 +81,9 @@ def main():
     print("\n[4] Searching for documents...")
     
     queries = [
-        ("штучний інтелект", "Ukrainian query about AI"),
+        ("artificial intelligence", "English query about AI"),
         ("machine learning", "English query about ML"),
-        ("нейронні мережі", "Ukrainian query about neural networks"),
+        ("neural networks", "English query about neural networks"),
     ]
     
     for query, description in queries:
@@ -122,9 +122,9 @@ def main():
     # --- Step 5: Search after reload ---
     print("\n[7] Searching after reload...")
     
-    results = vector_mem2.search("штучний інтелект", k=2)
+    results = vector_mem2.search("artificial intelligence", k=2)
     if results:
-        print(f"    Found {len(results)} results for 'штучний інтелект':")
+        print(f"    Found {len(results)} results for 'artificial intelligence':")
         for i, result in enumerate(results):
             print(f"      Result {i+1}: {result.page_content[:80]}...")
     else:

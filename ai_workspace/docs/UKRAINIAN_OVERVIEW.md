@@ -369,4 +369,4 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 | [`docs/GRAPH_RAG.md`](../docs/GRAPH_RAG.md) | Graph RAG інтеграція |
 | [`docs/CLIENT_INTEGRATION_GUIDE.md`](../docs/CLIENT_INTEGRATION_GUIDE.md) | Інтеграція з клієнтами |
 | [`PROJECT_STATE.md`](../PROJECT_STATE.md) | Стан проекту |
-| [`INSTRUCTIONS.md`](../INSTRUCTIONS.md) | Інструкція з запуску |
+| [`SETUP_GUIDE.md`](../SETUP_GUIDE.md) | Інструкція з запуску |

@@ -40,7 +40,7 @@ def test_mcp_server():
     
     # Test 2: Add a document
     print("\n2. Testing add_document...")
-    test_doc = Path(__file__).parent.parent / "INSTRUCTIONS.md"
+    test_doc = Path(__file__).parent.parent / "SETUP_GUIDE.md"
     if test_doc.exists():
         try:
             response = requests.post(

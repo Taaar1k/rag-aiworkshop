@@ -1,48 +1,48 @@
 ### SPEC.md
 
-Вибір RAG (Retrieval-Augmented Generation) — це, мабуть, **найефективніший спосіб** для локальних моделей, коли треба працювати з великими обсягами даних (книги, бази знань, документація до коду) без переповнення оперативної пам'яті (VRAM/RAM).
+Choosing RAG (Retrieval-Augmented Generation) is probably the **most effective way** for local models when you need to work with large amounts of data (books, knowledge bases, code documentation) without overflowing RAM/VRAM.
 
-Проте ця технологія не є магічною паличкою, і в ній є свої складнощі. Давайте детально розберемо підводні камені та те, як практично зібрати цю систему на базі `llama.cpp`.
-
----
-
-### Частина 1: "Підводні камені" RAG
-
-Коли ви почнете впроваджувати RAG, ви зіткнетеся з такими проблемами:
-
-1. **Проблема мови ембедингів (Multilingual problem):**
-   Ви згадали модель `all-MiniLM-L6-v2`. Вона чудова, швидка, але **вона працює переважно з англійською мовою**. Якщо ваш документ українською, а ви шукаєте українською, ця модель не зрозуміє сенсу і поверне "сміття".
-   * **Рішення:** Використовувати багатомовні моделі, наприклад, `paraphrase-multilingual-MiniLM-L12-v2`, `intfloat/multilingual-e5-small` або `BAAI/bge-m3`.
-
-2. **Проблема розбиття на фрагменти (Chunking strategy):**
-   Якщо ви просто поріжете текст по 500 символів, ви можете розірвати речення або шматок коду навпіл. У результаті векторна база знайде шматок, але модель не зрозуміє контексту.
-   * **Рішення:** Робити розбиття "з перекриттям" (overlap). Наприклад, кожен фрагмент має 500 токенів, але останні 50 токенів попереднього фрагмента є першими 50 токенами наступного. Або розбивати строго по абзацах/символах переносу рядка `\n\n`.
-
-3. **Синтез vs. Пошук фактів:**
-   RAG ідеально працює для питань типу: *"Яке покарання за статтею 185?"*. Він знайде статтю і модель відповість. Але RAG **жахливо працює** для питань типу: *"Зроби короткий переказ всього документа"*, тому що витягуються лише 2-3 випадкові шматки тексту, а не весь документ.
-
-4. **"Загублені посередині" (Lost in the middle):**
-   Дослідження показують: якщо ви дасте LLM 5 знайдених абзаців, вона добре звертає увагу на перший і останній, але часто ігнорує інформацію посередині.
-   * **Рішення:** Обмежувати кількість знайдених шматків (до 3-4) і ставити найбільш релевантний на самий початок або кінець промпту.
+However, this technology is not a magic wand, and it has its own complexities. Let's detail the pitfalls and how to practically assemble this system based on `llama.cpp`.
 
 ---
 
-### Частина 2: Як реалізувати це з `llama.cpp`
+### Part 1: "Pitfalls" of RAG
 
-Сам по собі `llama.cpp` — це рушій для генерації тексту. Щоб зробити RAG, нам потрібен "оркестратор", який буде працювати з векторами. Найкраще робити це на **Python**, використовуючи бібліотеку `llama-cpp-python`.
+When you start implementing RAG, you will encounter these problems:
 
-Ось концепт того, як це має працювати. Нам знадобляться 2 бібліотеки:
-* `llama-cpp-python` (для генерації відповіді великою моделлю).
-* `sentence-transformers` або `chromadb` (для пошуку релевантних шматків).
+1. **Embedding language problem (Multilingual problem):**
+   You mentioned the `all-MiniLM-L6-v2` model. It's great, fast, but **it works mainly with English**. If your document is in Ukrainian, and you search in Ukrainian, the model won't understand the meaning and will return "garbage".
+   * **Solution:** Use multilingual models, for example, `paraphrase-multilingual-MiniLM-L12-v2`, `intfloat/multilingual-e5-small` or `BAAI/bge-m3`.
 
-#### Крок 1: Встановлення залежностей
+2. **Chunking strategy problem:**
+   If you just cut the text by 500 characters, you can tear sentences or code pieces in half. As a result, the vector database will find the piece, but the model won't understand the context.
+   * **Solution:** Make chunking "with overlap". For example, each chunk has 500 tokens, but the last 50 tokens of the previous chunk are the first 50 tokens of the next one. Or split strictly by paragraphs/newline characters `\n\n`.
+
+3. **Synthesis vs. Fact search:**
+   RAG works perfectly for questions like: *"What is the punishment under article 185?"*. It will find the article and the model will answer. But RAG **works terribly** for questions like: *"Make a short summary of the entire document"*, because only 2-3 random pieces of text are extracted, not the entire document.
+
+4. **"Lost in the middle":**
+   Research shows: if you give the LLM 5 found paragraphs, it pays good attention to the first and last, but often ignores information in the middle.
+   * **Solution:** Limit the number of found chunks (to 3-4) and put the most relevant one at the very beginning or end of the prompt.
+
+---
+
+### Part 2: How to implement this with `llama.cpp`
+
+`llama.cpp` itself is an engine for text generation. To make RAG, we need an "orchestrator" that will work with vectors. It's best to do this in **Python**, using the `llama-cpp-python` library.
+
+Here's the concept of how this should work. We will need 2 libraries:
+* `llama-cpp-python` (for generating responses with a large model).
+* `sentence-transformers` or `chromadb` (for searching relevant chunks).
+
+#### Step 1: Installing dependencies
 ```bash
 pip install llama-cpp-python sentence-transformers scikit-learn numpy
 ```
 
-#### Крок 2: Пишемо код на Python (Простий RAG)
+#### Step 2: Writing code in Python (Simple RAG)
 
-Ось готовий базовий приклад того, як поєднати локальні ембединги та `llama.cpp` без важких баз даних:
+Here is a ready basic example of how to combine local embeddings and `llama.cpp` without heavy databases:
 
 ```python
 import numpy as np
@@ -50,83 +50,83 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from llama_cpp import Llama
 
-# 1. Завантажуємо багатомовну модель для створення ембедингів (займає ~400 МБ)
-print("Завантаження моделі ембедингів...")
+# 1. Load multilingual model for creating embeddings (takes ~400 MB)
+print("Loading embedding model...")
 embedder = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
-# 2. Завантажуємо локальну LLM через llama.cpp
-# Вибираємо модель, яка у вас є (наприклад Llama-3-8B-Instruct-Q4_K_M.gguf)
-print("Завантаження LLM (llama.cpp)...")
+# 2. Load local LLM via llama.cpp
+# Choose the model you have (e.g. Llama-3-8B-Instruct-Q4_K_M.gguf)
+print("Loading LLM (llama.cpp)...")
 llm = Llama(
     model_path="./models/Llama-3-8B-Instruct-Q4_K_M.gguf", 
-    n_ctx=2048, # ЕКОНОМІЯ: Нам потрібен контекст всього 2048, бо ми використовуємо RAG!
-    n_gpu_layers=-1 # Якщо є відеокарта
+    n_ctx=2048, # ECONOMY: We need only 2048 context, because we use RAG!
+    n_gpu_layers=-1 # If you have a GPU
 )
 
-# 3. Наш великий текст (для прикладу - масив абзаців/фрагментів)
+# 3. Our large text (for example - array of paragraphs/chunks)
 documents = [
-    "Компанія LlamaCorp була заснована у 2021 році в місті Київ.",
-    "Головний продукт компанії - це інструменти для оптимізації штучного інтелекту.",
-    "Дохід компанії у 2023 році склав 5 мільйонів доларів.",
-    "Llama.cpp написаний на C/C++ розробником Georgi Gerganov.",
-    "RAG дозволяє економити контекстне вікно моделі."
+    "LlamaCorp company was founded in 2021 in Kyiv.",
+    "The company's main product is tools for artificial intelligence optimization.",
+    "The company's revenue in 2023 was 5 million dollars.",
+    "Llama.cpp is written in C/C++ by developer Georgi Gerganov.",
+    "RAG allows saving the model's context window."
 ]
 
-# 4. Створюємо вектори (ембединги) для наших документів
-print("Векторизація документів...")
+# 4. Create vectors (embeddings) for our documents
+print("Vectorizing documents...")
 doc_embeddings = embedder.encode(documents)
 
 def rag_query(user_query, top_k=2):
-    # А) Векторизуємо запит користувача
+    # A) Vectorize user query
     query_embedding = embedder.encode([user_query])
     
-    # Б) Шукаємо схожість між запитом та документами (Косинусна схожість)
+    # B) Search similarity between query and documents (Cosine similarity)
     similarities = cosine_similarity(query_embedding, doc_embeddings)[0]
     
-    # В) Беремо індекси top_k найбільш схожих шматків
+    # C) Take indices of top_k most similar chunks
     top_indices = np.argsort(similarities)[-top_k:][::-1]
     
-    # Г) Формуємо знайдений контекст
+    # D) Form found context
     retrieved_context = "\n".join([documents[i] for i in top_indices])
     
-    # Д) Створюємо промпт для llama.cpp
-    # ВАЖЛИВО: Жорстко вказуємо моделі використовувати ТІЛЬКИ контекст!
+    # E) Create prompt for llama.cpp
+    # IMPORTANT: Strictly tell the model to use ONLY the context!
     prompt = f"""<|system|>
-Ти корисний асистент. Дай відповідь на питання користувача, використовуючи ТІЛЬКИ наданий контекст. 
-Якщо в контексті немає відповіді, так і скажи: "Я не знаю"
+You are a helpful assistant. Answer the user's question using ONLY the provided context. 
+If there is no answer in the context, say so: "I don't know"
 
-КОНТЕКСТ:
+CONTEXT:
 {retrieved_context}
 <|user|>
 {user_query}
 <|assistant|>
 """
     
-    print(f"\n--- Знайдений контекст ---\n{retrieved_context}\n--------------------------")
+    print(f"\n--- Found context ---\n{retrieved_context}\n--------------------------")
     
-    # Е) Генеруємо відповідь через llama.cpp
+    # F) Generate response via llama.cpp
     output = llm(
         prompt,
         max_tokens=256,
-        temperature=0.1, # Низька температура, щоб модель не фантазувала
+        temperature=0.1, # Low temperature so the model doesn't hallucinate
         stop=["<|user|>"]
     )
     
     return output['choices'][0]['text'].strip()
 
-# ТЕСТУЄМО
-query = "Який дохід мала компанія LlamaCorp і де вона заснована?"
-print("\nЗапит:", query)
+# TEST
+query = "What was LlamaCorp's revenue and where was it founded?"
+print("\nQuery:", query)
 answer = rag_query(query)
-print("\nВідповідь моделі:", answer)
+print("\nModel response:", answer)
 ```
 
-### Як це оптимізує ресурси з `llama.cpp`:
-1. **Економія RAM/VRAM:** Моделі Llama-3 з контекстом 8192 токенів потрібно близько 1-1.5 ГБ додаткової пам'яті ТІЛЬКИ під KV кеш. Якщо у вас книга на 100 000 слів, ви б взагалі її не завантажили. Завдяки RAG, ми ставимо `n_ctx=2048` (або навіть 1024), що економить величезну кількість пам'яті.
-2. **Швидкість (Time to First Token):** `llama.cpp` дуже довго опрацьовує початковий промпт (Prompt Processing), якщо він великий. Опрацювати 8000 токенів може зайняти 10-20 секунд на слабкому ПК. Опрацювати 2 знайдених абзаци + питання (близько 300 токенів) — менше 1 секунди.
-3. **Менше галюцинацій:** Коли у моделі гігантський контекст, вона може почати плутати факти з різних кінців документа. RAG звужує фокус до 2-3 абзаців.
+### How this optimizes resources with `llama.cpp`:
+1. **RAM/VRAM savings:** Llama-3 models with 8192 token context need about 1-1.5 GB of additional memory ONLY for KV cache. If you have a book of 100,000 words, you wouldn't load it at all. Thanks to RAG, we set `n_ctx=2048` (or even 1024), which saves a huge amount of memory.
+2. **Speed (Time to First Token):** `llama.cpp` takes a very long time to process the initial prompt (Prompt Processing) if it's large. Processing 8000 tokens can take 10-20 seconds on a weak PC. Processing 2 found paragraphs + question (about 300 tokens) — less than 1 second.
+3. **Fewer hallucinations:** When the model has a huge context, it can start confusing facts from different ends of the document. RAG narrows the focus to 2-3 paragraphs.
 
-### Що далі покращити для серйозного інструменту?
-Якщо ви хочете зробити з цього не просто скрипт, а надійний інструмент, варто додати базу даних (наприклад, **ChromaDB**). Вона автоматично зберігає вектори на диск. Тобто, вам не доведеться кожен раз при запуску скрипта перераховувати ембединги для документів. Ви проіндексуєте свої файли один раз, і далі пошук буде займати мілісекунди.
+### What to improve next for a serious tool?
+If you want to make this not just a script, but a reliable tool, it's worth adding a database (for example, **ChromaDB**). It automatically saves vectors to disk. That is, you won't have to recalculate embeddings for documents every time you run the script. You will index your files once, and then the search will take milliseconds.
 
-Що думаєте про цей підхід? Чи варто показати, як сюди інтегрувати реальне читання PDF-файлів або створення бази даних через ChromaDB?
+What do you think about this approach? Is it worth showing how to integrate real PDF reading or creating a database via ChromaDB here?

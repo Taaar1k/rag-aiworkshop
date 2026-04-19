@@ -1,82 +1,82 @@
-# PROJECT: RAG MCP Server з llama.cpp
+# PROJECT: RAG MCP Server with llama.cpp
 
 ## Goal
-Створити сучасний MCP RAG сервер з використанням FastMCP, LangChain та ChromaDB для роботи з локальними документами за допомогою Llama-3.
+Create a modern MCP RAG server using FastMCP, LangChain, and ChromaDB for working with local documents using Llama-3.
 
 ## Current Status
-- **Статус**: Підготовка до рефакторингу
-- **Прогрес**: 25% (1 з 4 етапів)
-- **Session ID**: (не використовується - stateless архітектура)
+- **Status**: Preparing for refactoring
+- **Progress**: 25% (1 of 4 stages)
+- **Session ID**: (not used - stateless architecture)
 - **Active Mode**: default
 
 ## Master Checklist
-- [x] Створено структуру проекту
-- [x] Встановлено залежності
-- [x] Створено базовий приклад RAG
-- [x] Створено інструкції з запуску
-- [x] **TASK-001**: Визначити першу задачу (виконано)
-- [x] **TASK-003**: Створено конфіг ембединг моделі (completed)
-- [ ] **TASK-002**: Рефакторинг під FastMCP (in progress)
-- [ ] **TASK-004**: Перебудова системи загальної пам'яті (pending)
-- [ ] **TASK-005**: Інтеграція та тестування нової архітектури (pending)
-- [ ] Завантажити модель ембедингів nomic-embed-text-v1.5.Q4_K_M.gguf
-- [ ] Створити FastMCP сервер
-- [ ] Інтегрувати LangChain та ChromaDB
-- [ ] Тестувати та впроваджувати
+- [x] Project structure created
+- [x] Dependencies installed
+- [x] Basic RAG example created
+- [x] Launch instructions created
+- [x] **TASK-001**: Define first task (completed)
+- [x] **TASK-003**: Embedding model config created (completed)
+- [ ] **TASK-002**: Refactoring for FastMCP (in progress)
+- [ ] **TASK-004**: Rebuild general memory system (pending)
+- [ ] **TASK-005**: Integration and testing of new architecture (pending)
+- [ ] Download embedding model nomic-embed-text-v1.5.Q4_K_M.gguf
+- [ ] Create FastMCP server
+- [ ] Integrate LangChain and ChromaDB
+- [ ] Test and implement
 
 ## Project Structure
 ```
 ai_workspace/
 ├── config/
-│   ├── default.yaml      # Конфігурація
-│   └── models.yaml       # Мапи моделей
+│   ├── default.yaml      # Configuration
+│   └── models.yaml       # Model maps
 ├── models/
 │   ├── llm/
-│   │   └── Llama-3-8B-Instruct-Q4_K_M.gguf  ✅ (наявна)
-│   └── embeddings/       ❌ (потрібно завантажити)
+│   │   └── Llama-3-8B-Instruct-Q4_K_M.gguf  ✅ (available)
+│   └── embeddings/       ❌ (needs to be downloaded)
 ├── scripts/
-│   └── rag_example.py    # Базовий приклад
+│   └── rag_example.py    # Basic example
 ├── src/
 │   └── core/
-│       └── config.py     # Налаштування
+│       └── config.py     # Settings
 ├── memory/
-│   ├── PROJECT.md        # Цей файл
+│   ├── PROJECT.md        # This file
 │   ├── TASKS/
 │   │   ├── INDEX.md
 │   │   ├── TASK-001.md
 │   │   └── TASK-002.md
 │   └── ROLES/
-├── venv/                 # Віртуальне середовище
+├── venv/                 # Virtual environment
 ├── download_embedding_model.py
-├── INSTRUCTIONS.md
+├── SETUP_GUIDE.md
 ├── spec.md
 └── requirements.txt
 ```
 
 ## Technical Stack
-- **Framework**: FastMCP (MCP сервери)
+- **Framework**: FastMCP (MCP servers)
 - **Orchestration**: LangChain (RAG pipeline)
-- **Vector Store**: ChromaDB (персистентне зберігання)
+- **Vector Store**: ChromaDB (persistent storage)
 - **LLM**: Llama-3-8B-Instruct (llama.cpp)
-- **Embeddings**: nomic-embed-text-v1.5 (потрібно завантажити)
+- **Embeddings**: nomic-embed-text-v1.5 (needs to be downloaded)
 
 ## Roles
-- **PM**: Project Manager - планування та координація
-- **Dev**: Developer - реалізація коду
-- **Thinker**: Аналітик - архітектурні рішення
-- **Scout**: Дослідник - пошук рішень
-- **Scribe**: Технічний письменник - документація
+- **PM**: Project Manager - planning and coordination
+- **Dev**: Developer - code implementation
+- **Thinker**: Analyst - architectural decisions
+- **Scout**: Researcher - solution search
+- **Scribe**: Technical Writer - documentation
 
 ## Notes
-- Проект використовує stateless архітектуру (Session ID не потрібен)
-- Віртуальне середовище venv вже створено в батьківській директорії
-- Потрібно завантажити модель ембедингів перед тестуванням
-- MCP сервер не потребує збереження стану сесії
+- The project uses stateless architecture (Session ID not needed)
+- Virtual environment venv already created in parent directory
+- Need to download embedding model before testing
+- MCP server does not require session state saving
 
 ## Next Steps
-1. Завантажити модель nomic-embed-text-v1.5.Q4_K_M.gguf
-2. Реалізувати FastMCP сервер з інструментами
-3. Інтегрувати LangChain та ChromaDB
-4. Протестувати RAG pipeline
-5. Перебудувати систему загальної пам'яті
-6. Налаштувати конфігурацію ембединг моделі
+1. Download embedding model nomic-embed-text-v1.5.Q4_K_M.gguf
+2. Implement FastMCP server with tools
+3. Integrate LangChain and ChromaDB
+4. Test RAG pipeline
+5. Rebuild general memory system
+6. Configure embedding model settings

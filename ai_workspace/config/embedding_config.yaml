@@ -1,49 +1,49 @@
-# Конфігурація моделі ембедингів
-# Порт сервера: 8090 (локальний llama.cpp сервер)
+# Embedding model configuration
+# Server port: 8090 (local llama.cpp server)
 
 model:
-  # Шлях до файлу моделі ембедингів (абсолютний або відносний від кореня проекту)
+  # Path to embedding model file (absolute or relative from project root)
   # Download via: huggingface_hub.snapshot_download(repo_id='nomic-ai/nomic-embed-text-v1.5', local_dir='./models/embeddings')
   model_path: "./models/embeddings/nomic-embed-text-v1.5.Q4_K_M.gguf"
   
-  # Ім'я моделі (для ідентифікації в логах)
+  # Model name (for identification in logs)
   model_name: "nomic-embed-text-v1.5"
   
-  # Порт, на якому слухає сервер ембедингів
+  # Port on which embedding server listens
   port: 8090
   
-  # Ендпоінт для запитів до ембединг моделі
+  # Endpoint for requests to embedding model
   endpoint: "http://localhost:{{port}}/v1/embeddings"
   
-  # Час очікування відповіді (секунди)
+  # Response timeout (seconds)
   timeout: 15
 
 server:
-  # Хост, на якому працює сервер ембедингів
+  # Host on which embedding server runs
   host: "127.0.0.1"
   
-  # Порт сервера (має бути унікальним, не конфліктує з іншими моделями)
+  # Server port (must be unique, no conflicts with other models)
   port: 8090
   
-  # Максимальна кількість потоків для обробки запитів
+  # Maximum number of threads for processing requests
   max_workers: 4
   
-  # Кеш для ембедингів (для прискорення повторних запитів)
+  # Cache for embeddings (to speed up repeated requests)
   cache_enabled: true
   cache_ttl: 3600
 
 retrieval:
-  # Кількість топ-результатів для повернення
+  # Number of top results to return
   top_k: 5
   
-  # Гібридний пошук (векторний + ключові слова)
+  # Hybrid search (vector + keywords)
   hybrid_search: true
   
-  # Рерайтинг результатів
+  # Reranking results
   rerank: true
   
-  # Розмір чанка для розбиття документів
+  # Chunk size for document splitting
   chunk_size: 512
   
-  # Перекриття чанків (overlap)
+  # Chunk overlap
   chunk_overlap: 50

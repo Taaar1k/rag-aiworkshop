@@ -211,7 +211,7 @@ directory_scanning:
 
 The system will automatically index new files and re-index modified ones.
 
-**Full setup walkthrough:** [`ai_workspace/INSTRUCTIONS.md`](ai_workspace/INSTRUCTIONS.md).
+**Full setup walkthrough:** [`ai_workspace/SETUP_GUIDE.md`](ai_workspace/SETUP_GUIDE.md).
 
 ---
 

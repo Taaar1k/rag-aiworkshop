@@ -9,13 +9,13 @@
 - **completed**: 2026-04-14
 
 ## Objective
-Реалізувати гібридний пошук (гібридний векторний + ключовий пошук) для покращення точності RAG системи на 15-25%.
+Implement hybrid search (hybrid vector + keyword search) to improve RAG system accuracy by 15-25%.
 
 ## Background
-Поточна система використовує лише векторний пошук, що призводить до втрати специфічних термінів та технічних термінів. Гібридний пошук поєднує семантичний (векторний) та ключовий (BM25) пошук для кращих результатів.
+Current system uses only vector search, which leads to loss of specific terms and technical terms. Hybrid search combines semantic (vector) and keyword (BM25) search for better results.
 
 ## Research Summary
-- **Accuracy Gain**: 15-25% з Reciprocal Rank Fusion (RRF)
+- **Accuracy Gain**: 15-25% with Reciprocal Rank Fusion (RRF)
 - **Performance**: ~5.9ms overhead (Haystack benchmark)
 - **Implementation**: Ensemble retriever with weighted results
 - **Best Practice**: Industry standard for production RAG systems
