@@ -1,7 +1,7 @@
 # RAG with llama.cpp — Release Notes v0.1.0 (Stable)
 
 **Release Date:** 2026-04-20  
-**License:** MIT License — Copyright (c) 2026 Taras Gumarchuk (workshopai2)  
+**License:** MIT License
 **Supported Languages:** English, Ukrainian  
 **Community:** [C.E.H. Framework on Gumroad](https://workshopai2.gumroad.com/l/ceh-framework)
 

@@ -1,6 +1,6 @@
 # RAG System — Release Notes v2026.04.19
 
-**License:** MIT License — Copyright (c) 2026 Taras Gumarchuk (workshopai2)
+**License:** MIT License
 **Supported Languages:** English, Ukrainian  
 **Community:** [C.E.H. Framework on Gumroad](https://workshopai2.gumroad.com/l/ceh-framework)
 
