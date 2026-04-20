@@ -1,4 +1,4 @@
-# rag-workshop
+# rag-aiworkshop
 
 <!-- === DYNAMIC BADGE BAR === -->
 <div align="center">
