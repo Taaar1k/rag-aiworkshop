@@ -4,8 +4,6 @@ Implements type-separated memory architecture with ChromaDB integration.
 
 Memory Types:
 - Vector Memory: ChromaDB collections for embedding vectors
-- Context Memory: Document chunks and retrieval results
-- Session Memory: User session state with TTL-based expiration
 """
 
 import os
@@ -15,7 +13,7 @@ import uuid
 
 logger = logging.getLogger(__name__)
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass, field
@@ -37,7 +35,7 @@ class MemoryConfig:
     batch_size: int = 100
     max_collection_size: int = 10_000_000
     session_ttl_hours: int = 24
-    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_model: str = os.getenv("EMBEDDING_MODEL_NAME", "nomic-ai/nomic-embed-text-v1.5")
 
 
 class MemoryBase(ABC):
@@ -97,7 +95,7 @@ class VectorMemory(MemoryBase):
             chunk_overlap=50,
             separators=["\n\n", "\n", " ", ""]
         )
-    
+
     def _init_chromadb(self):
         """Initialize ChromaDB client with persistent storage."""
         os.makedirs(self.config.persist_directory, exist_ok=True)
@@ -262,344 +260,6 @@ class VectorMemory(MemoryBase):
         }
 
 
-class ContextMemory(MemoryBase):
-    """
-    Context Memory for document chunks and retrieval results.
-    
-    Features:
-    - Document chunk storage
-    - Retrieval result caching
-    - Hybrid search support (vector + BM25)
-    - Per-model context isolation
-    """
-    
-    def __init__(self, config: MemoryConfig, model_id: str):
-        self.model_id = model_id
-        self.config = config
-        self.persist_path = Path(config.persist_directory) / "context" / model_id
-        self.persist_path.mkdir(parents=True, exist_ok=True)
-        
-        # In-memory storage for context
-        self._storage: Dict[str, Dict[str, Any]] = {}
-        self._retrieval_cache: Dict[str, List[Document]] = {}
-    
-    def add(self, data: Union[Document, Dict[str, Any], List[Document]]) -> str:
-        """
-        Add document chunks to context memory.
-        
-        Args:
-            data: Document, dict, or list of documents
-            
-        Returns:
-            ID of added item
-        """
-        if isinstance(data, dict):
-            doc = Document(page_content=str(data.get("content", "")), metadata=data)
-        elif isinstance(data, Document):
-            doc = data
-        else:
-            # List of documents
-            ids = []
-            for item in data:
-                if isinstance(item, dict):
-                    item = Document(page_content=str(item.get("content", "")), metadata=item)
-                ids.append(self.add(item))
-            return ids[0] if len(ids) == 1 else ids
-        
-        # Generate unique ID
-        item_id = str(uuid.uuid4())
-        
-        # Split into chunks
-        chunks = self.text_splitter.split_documents([doc])
-        
-        # Store chunks
-        for i, chunk in enumerate(chunks):
-            chunk.metadata["item_id"] = f"{item_id}_{i}"
-            chunk.metadata["parent_id"] = item_id
-            chunk.metadata["model_id"] = self.model_id
-            chunk.metadata["type"] = "context"
-            chunk.metadata["timestamp"] = datetime.now().isoformat()
-        
-        self._storage[item_id] = {
-            "document": doc,
-            "chunks": chunks,
-            "metadata": {
-                "item_id": item_id,
-                "model_id": self.model_id,
-                "type": "context",
-                "timestamp": datetime.now().isoformat(),
-                "chunk_count": len(chunks)
-            }
-        }
-        
-        return item_id
-    
-    def get(self, memory_id: str) -> Optional[Dict[str, Any]]:
-        """Get context by ID."""
-        return self._storage.get(memory_id)
-    
-    def search(
-        self,
-        query: str,
-        k: int = 5,
-        filter_metadata: Optional[Dict[str, Any]] = None
-    ) -> List[Document]:
-        """
-        Search context memory.
-        
-        Args:
-            query: Search query
-            k: Number of results to return
-            filter_metadata: Metadata filter
-            
-        Returns:
-            List of matching chunks
-        """
-        # Build filter
-        where_filter = {"model_id": self.model_id}
-        if filter_metadata:
-            where_filter.update(filter_metadata)
-        
-        # Search all chunks
-        results = []
-        for item_id, item_data in self._storage.items():
-            for chunk in item_data["chunks"]:
-                # Simple keyword matching (can be enhanced with BM25)
-                if query.lower() in chunk.page_content.lower():
-                    results.append(chunk)
-        
-        # Sort by timestamp and return top k
-        results.sort(key=lambda x: x.metadata.get("timestamp", ""), reverse=True)
-        return results[:k]
-    
-    def cache_retrieval(self, query: str, results: List[Document]) -> None:
-        """Cache retrieval results."""
-        self._retrieval_cache[query] = results
-    
-    def get_cached_retrieval(self, query: str) -> Optional[List[Document]]:
-        """Get cached retrieval results."""
-        return self._retrieval_cache.get(query)
-    
-    def delete(self, memory_id: str) -> bool:
-        """Delete context by ID."""
-        if memory_id in self._storage:
-            del self._storage[memory_id]
-            return True
-        return False
-    
-    def clear(self) -> None:
-        """Clear all context data."""
-        self._storage.clear()
-        self._retrieval_cache.clear()
-    
-    def get_stats(self) -> Dict[str, Any]:
-        """Get context memory statistics."""
-        return {
-            "model_id": self.model_id,
-            "context_count": len(self._storage),
-            "cached_queries": len(self._retrieval_cache)
-        }
-
-
-class SessionMemory(MemoryBase):
-    """
-    Session Memory for user session state and conversation history.
-    
-    Features:
-    - Session state management
-    - Conversation history
-    - TTL-based expiration
-    - Persistent storage
-    """
-    
-    def __init__(self, config: MemoryConfig):
-        self.config = config
-        self.persist_path = Path(config.persist_directory) / "sessions"
-        self.persist_path.mkdir(parents=True, exist_ok=True)
-        
-        # In-memory session storage
-        self._sessions: Dict[str, Dict[str, Any]] = {}
-    
-    def create_session(self, session_id: Optional[str] = None) -> str:
-        """
-        Create a new session.
-        
-        Args:
-            session_id: Optional custom session ID
-            
-        Returns:
-            New session ID
-        """
-        session_id = session_id or str(uuid.uuid4())
-        
-        self._sessions[session_id] = {
-            "session_id": session_id,
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat(),
-            "history": [],
-            "state": {}
-        }
-        
-        return session_id
-    
-    def add(self, data: Union[Dict[str, Any], str], session_id: Optional[str] = None) -> str:
-        """
-        Add data to session.
-        
-        Args:
-            data: Data to add (dict or string)
-            session_id: Session ID (auto-create if not provided)
-            
-        Returns:
-            Entry ID
-        """
-        if not session_id:
-            session_id = self.create_session()
-        
-        if session_id not in self._sessions:
-            self.create_session(session_id)
-        
-        # Generate entry ID
-        entry_id = str(uuid.uuid4())
-        
-        # Determine entry type
-        if isinstance(data, str):
-            entry = {
-                "entry_id": entry_id,
-                "type": "message",
-                "content": data,
-                "timestamp": datetime.now().isoformat()
-            }
-        elif isinstance(data, dict):
-            entry = {
-                "entry_id": entry_id,
-                "type": data.get("type", "state"),
-                "content": data.get("content", data),
-                "timestamp": datetime.now().isoformat()
-            }
-        else:
-            entry = {
-                "entry_id": entry_id,
-                "type": "unknown",
-                "content": str(data),
-                "timestamp": datetime.now().isoformat()
-            }
-        
-        # Add to history
-        self._sessions[session_id]["history"].append(entry)
-        self._sessions[session_id]["updated_at"] = datetime.now().isoformat()
-        
-        return entry_id
-    
-    def get(self, memory_id: str) -> Optional[Dict[str, Any]]:
-        """Get session by ID."""
-        session = self._sessions.get(memory_id)
-        if session and not self._is_expired(session):
-            return session
-        return None
-    
-    def get_history(self, session_id: str, limit: int = 10) -> List[Dict[str, Any]]:
-        """Get conversation history for session."""
-        session = self._sessions.get(session_id)
-        if not session or self._is_expired(session):
-            return []
-        
-        return session["history"][-limit:]
-    
-    def get_state(self, session_id: str) -> Dict[str, Any]:
-        """Get session state."""
-        session = self._sessions.get(session_id)
-        if not session or self._is_expired(session):
-            return {}
-        return session.get("state", {})
-    
-    def update_state(self, session_id: str, state: Dict[str, Any]) -> None:
-        """Update session state."""
-        if session_id in self._sessions:
-            self._sessions[session_id]["state"].update(state)
-            self._sessions[session_id]["updated_at"] = datetime.now().isoformat()
-    
-    def search(
-        self,
-        query: str,
-        k: int = 5,
-        session_id: Optional[str] = None,
-        filter_metadata: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Search session history.
-        
-        Args:
-            query: Search query
-            k: Number of results
-            session_id: Optional session filter
-            filter_metadata: Optional metadata filter
-            
-        Returns:
-            Matching entries
-        """
-        results = []
-        
-        sessions = [self._sessions[session_id]] if session_id else list(self._sessions.values())
-        
-        for session in sessions:
-            if self._is_expired(session):
-                continue
-            
-            for entry in session.get("history", []):
-                content = entry.get("content", "")
-                if query.lower() in str(content).lower():
-                    results.append(entry)
-        
-        # Sort by timestamp and return top k
-        results.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-        return results[:k]
-    
-    def delete(self, memory_id: str) -> bool:
-        """Delete session by ID."""
-        if memory_id in self._sessions:
-            del self._sessions[memory_id]
-            return True
-        return False
-    
-    def clear(self) -> None:
-        """Clear all sessions."""
-        self._sessions.clear()
-    
-    def cleanup_expired(self) -> int:
-        """Remove expired sessions. Returns count of removed sessions."""
-        expired_count = 0
-        expired_sessions = []
-        
-        for session_id, session in self._sessions.items():
-            if self._is_expired(session):
-                expired_sessions.append(session_id)
-                expired_count += 1
-        
-        for session_id in expired_sessions:
-            del self._sessions[session_id]
-        
-        return expired_count
-    
-    def _is_expired(self, session: Dict[str, Any]) -> bool:
-        """Check if session is expired."""
-        try:
-            created_at = datetime.fromisoformat(session["created_at"])
-            ttl = timedelta(hours=self.config.session_ttl_hours)
-            return datetime.now() - created_at > ttl
-        except (KeyError, ValueError):
-            return False
-    
-    def get_stats(self) -> Dict[str, Any]:
-        """Get session memory statistics."""
-        active_sessions = sum(1 for s in self._sessions.values() if not self._is_expired(s))
-        return {
-            "total_sessions": len(self._sessions),
-            "active_sessions": active_sessions,
-            "ttl_hours": self.config.session_ttl_hours
-        }
-
-
 class MemoryManager:
     """
     Factory pattern for creating and managing memory instances.
@@ -614,11 +274,6 @@ class MemoryManager:
     def __init__(self, config: Optional[MemoryConfig] = None):
         self.config = config or MemoryConfig()
         self._memories: Dict[str, MemoryBase] = {}
-        self._memory_types = {
-            "vector": VectorMemory,
-            "context": ContextMemory,
-            "session": SessionMemory
-        }
     
     def get_vector_memory(self, model_id: str) -> VectorMemory:
         """Get or create vector memory for model."""
@@ -626,41 +281,21 @@ class MemoryManager:
             self._memories[model_id] = VectorMemory(self.config, model_id)
         return self._memories[model_id]
     
-    def get_context_memory(self, model_id: str) -> ContextMemory:
-        """Get or create context memory for model."""
-        if model_id not in self._memories:
-            self._memories[model_id] = ContextMemory(self.config, model_id)
-        return self._memories[model_id]
-    
-    def get_session_memory(self) -> SessionMemory:
-        """Get or create session memory."""
-        if "session" not in self._memories:
-            self._memories["session"] = SessionMemory(self.config)
-        return self._memories["session"]
-    
     def get_memory(self, memory_type: str, model_id: Optional[str] = None) -> MemoryBase:
         """Get memory by type."""
-        if memory_type == "session":
-            return self.get_session_memory()
-        elif memory_type == "vector":
+        if memory_type == "vector":
             return self.get_vector_memory(model_id or "default")
-        elif memory_type == "context":
-            return self.get_context_memory(model_id or "default")
         else:
             raise ValueError(f"Unknown memory type: {memory_type}")
     
     def cleanup(self) -> Dict[str, int]:
         """
-        Cleanup expired entries and overloaded collections.
+        Cleanup overloaded collections.
         
         Returns:
             Cleanup statistics
         """
         stats = {}
-        
-        # Cleanup expired sessions
-        session_memory = self.get_session_memory()
-        stats["expired_sessions"] = session_memory.cleanup_expired()
         
         # Check overloaded collections
         for model_id, memory in self._memories.items():

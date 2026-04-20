@@ -382,6 +382,10 @@ Each feature corresponds to a numbered task implemented by the C.E.H. agent clus
 | TASK-024 | Fix integration tests (7 passed, 1 skipped, 0 failed) | DONE |
 | TASK-025 | Directory Scanning & Incremental Indexing | PENDING |
 
+## Recent Changes
+
+- **v2026.04.20** — **Breaking:** Removed unused `ContextMemory` and `SessionMemory` subsystems from [`memory_manager.py`](ai_workspace/src/core/memory_manager.py) (dead code with misleading docstrings). `MemoryConfig.embedding_model` default aligned to `nomic-ai/nomic-embed-text-v1.5` via `EMBEDDING_MODEL_NAME` env var. If you depended on them, pin to the previous release; a real implementation will be written when requirements are concrete.
+
 Every feature, fix, and integration above was executed **fully autonomously** by a multi-agent cluster (PM, Code, Debug, Writer, Scaut, Ask, Healer) running on **local Qwen LLMs** — from **Qwen 35B** to **Qwen 80B MoE**, entirely on-device, no external API calls.
 
 Each task file in [`ai_workspace/memory/TASKS/`](./ai_workspace/memory/TASKS/) contains the objective, DoD checklist, test evidence, and change log — the real audit trail, unedited. This is what "evidence-gated autonomous development" looks like in practice: nothing hidden, nothing polished post-hoc. Just code, tests, and proof.
