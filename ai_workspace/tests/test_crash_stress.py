@@ -6,8 +6,6 @@ All tests use mocks to avoid CUDA/memory issues and focus on application logic.
 """
 
 import pytest
-import sys
-import os
 import time
 import random
 import string
@@ -18,9 +16,6 @@ from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 from collections import defaultdict
 import json
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Import core modules
 from core.memory_persistence import MemoryPersistence, Message, UserContext

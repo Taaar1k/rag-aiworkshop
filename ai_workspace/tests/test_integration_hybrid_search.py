@@ -6,12 +6,9 @@ Validates RRF fusion, deduplication, and performance metrics.
 """
 
 import pytest
-import sys
 from pathlib import Path
 import time
 import statistics
-
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from langchain_core.documents import Document
 from core.retrievers.bm25_retriever import BM25Retriever, BM25Config

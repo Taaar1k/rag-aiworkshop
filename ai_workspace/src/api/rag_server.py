@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import qdrant_client
 from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FilterSelector, FieldCondition, MatchValue
+from qdrant_client.http.exceptions import ApiException as QdrantAPIException
 from slowapi.errors import RateLimitExceeded
 
 # Add src to path for imports
@@ -80,10 +81,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add CORS middleware
+# Add CORS middleware — env-driven whitelist (SPEC-2026-04-20-PRODUCTION-HARDENING)
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -91,6 +94,17 @@ app.add_middleware(
 
 # Add rate limit exception handler
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+
+# Global catch-all: sanitize unexpected exceptions to 500 (TASK-039)
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch-all exception handler — logs with traceback, returns sanitized 500."""
+    logger.exception("Unhandled exception")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
 
 # Add slowapi state for rate limit tracking
 app.state.limiter = limiter
@@ -214,45 +228,38 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
     OpenAI-compatible endpoint for chat completions with RAG.
     Uses Qdrant for vector search and LLM for response generation.
     """
-    try:
-        # Validate messages
-        if not body.messages:
-            raise HTTPException(status_code=422, detail="messages field is required and cannot be empty")
-        
-        # Extract query from messages
-        query = body.messages[-1].content if body.messages else ""
-        
-        # Perform RAG query
-        rag_response = perform_rag_query(
-            query=query,
-            top_k=body.top_k if hasattr(body, 'top_k') else 5,
-            temperature=body.temperature
-        )
-        
-        return ChatCompletionResponse(
-            id=f"chatcmpl-{int(datetime.now().timestamp())}",
-            created=int(datetime.now().timestamp()),
-            model=body.model,
-            choices=[{
-                "index": 0,
-                "message": {
-                    "role": "assistant",
-                    "content": rag_response["answer"]
-                },
-                "finish_reason": "stop"
-            }],
-            usage={
-                "prompt_tokens": len(query.split()),
-                "completion_tokens": len(rag_response["answer"].split()),
-                "total_tokens": len(query.split()) + len(rag_response["answer"].split())
-            }
-        )
-    except HTTPException:
-        # Re-raise HTTP exceptions (422, 400, etc.) without wrapping
-        raise
-    except Exception as e:
-        logger.error(f"Error in chat completions: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    # Validate messages
+    if not body.messages:
+        raise HTTPException(status_code=422, detail="messages field is required and cannot be empty")
+    
+    # Extract query from messages
+    query = body.messages[-1].content if body.messages else ""
+    
+    # Perform RAG query
+    rag_response = perform_rag_query(
+        query=query,
+        top_k=body.top_k if hasattr(body, 'top_k') else 5,
+        temperature=body.temperature
+    )
+    
+    return ChatCompletionResponse(
+        id=f"chatcmpl-{int(datetime.now().timestamp())}",
+        created=int(datetime.now().timestamp()),
+        model=body.model,
+        choices=[{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": rag_response["answer"]
+            },
+            "finish_reason": "stop"
+        }],
+        usage={
+            "prompt_tokens": len(query.split()),
+            "completion_tokens": len(rag_response["answer"].split()),
+            "total_tokens": len(query.split()) + len(rag_response["answer"].split())
+        }
+    )
 
 
 @app.post("/v1/embeddings")
@@ -262,31 +269,27 @@ async def create_embeddings(request: Request, body: EmbeddingRequest):
     OpenAI-compatible endpoint for embedding generation.
     Uses sentence-transformers for embedding generation.
     """
-    try:
-        inputs = body.input if isinstance(body.input, list) else [body.input]
-        
-        # Generate embeddings
-        embeddings = []
-        for text in inputs:
-            embedding = generate_embedding(text)
-            embeddings.append({
-                "object": "embedding",
-                "embedding": embedding,
-                "index": len(embeddings)
-            })
-        
-        return EmbeddingResponse(
-            object="list",
-            data=embeddings,
-            model=body.model,
-            usage={
-                "prompt_tokens": sum(len(text.split()) for text in inputs),
-                "total_tokens": sum(len(text.split()) for text in inputs)
-            }
-        )
-    except Exception as e:
-        logger.error(f"Error in embeddings: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    inputs = body.input if isinstance(body.input, list) else [body.input]
+    
+    # Generate embeddings
+    embeddings = []
+    for text in inputs:
+        embedding = generate_embedding(text)
+        embeddings.append({
+            "object": "embedding",
+            "embedding": embedding,
+            "index": len(embeddings)
+        })
+    
+    return EmbeddingResponse(
+        object="list",
+        data=embeddings,
+        model=body.model,
+        usage={
+            "prompt_tokens": sum(len(text.split()) for text in inputs),
+            "total_tokens": sum(len(text.split()) for text in inputs)
+        }
+    )
 
 
 # RAG-specific endpoints
@@ -296,16 +299,12 @@ async def rag_query(request: Request, body: RAGQueryRequest):
     """
     Custom RAG query endpoint with vector search and LLM generation.
     """
-    try:
-        response = perform_rag_query(
-            query=body.query,
-            top_k=body.top_k,
-            temperature=body.temperature
-        )
-        return response
-    except Exception as e:
-        logger.error(f"Error in RAG query: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    response = perform_rag_query(
+        query=body.query,
+        top_k=body.top_k,
+        temperature=body.temperature
+    )
+    return response
 
 
 @app.post("/rag/index")
@@ -318,23 +317,26 @@ async def index_document(request: Request, document: Document):
         # Generate embedding for the document
         embedding = generate_embedding(document.text)
         
-        # Store in Qdrant
-        qdrant_client_instance.upsert(
-            collection_name="rag_documents",
-            points=[PointStruct(
-                id=document.id,
-                vector=embedding,
-                payload={
-                    "text": document.text,
-                    **document.metadata
-                }
-            )]
-        )
+        # Store in Qdrant — wrap blocking SDK call in thread pool
+        def _upsert():
+            qdrant_client_instance.upsert(
+                collection_name="rag_documents",
+                points=[PointStruct(
+                    id=document.id,
+                    vector=embedding,
+                    payload={
+                        "text": document.text,
+                        **document.metadata
+                    }
+                )]
+            )
+        
+        await asyncio.to_thread(_upsert)
         
         return {"status": "success", "document_id": document.id}
-    except Exception as e:
-        logger.error(f"Error indexing document: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except (QdrantAPIException, ValueError, KeyError, Exception) as e:
+        logger.exception("Error indexing document")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # Utility functions
@@ -364,8 +366,8 @@ def initialize_qdrant():
         logger.info(f"Initialized Qdrant client at {host}:{port}")
         
         return qdrant_client_instance
-    except Exception as e:
-        logger.warning(f"Qdrant initialization failed: {str(e)}, running in offline mode")
+    except (OSError, ConnectionError, QdrantAPIException, Exception) as e:
+        logger.warning("Qdrant initialization failed, running in offline mode", exc_info=True)
         qdrant_client_instance = None
         return None
 
@@ -382,8 +384,8 @@ def initialize_embedding_model():
         logger.info(f"Initialized embedding model: {model_name}")
         
         return embedding_model_instance
-    except Exception as e:
-        logger.error(f"Failed to initialize embedding model: {str(e)}")
+    except (ImportError, RuntimeError, Exception) as e:
+        logger.exception("Failed to initialize embedding model")
         raise
 
 
@@ -414,8 +416,8 @@ def initialize_llm_model():
         
         logger.info(f"Initialized LLM model: {model_path}")
         return llm_model_instance
-    except Exception as e:
-        logger.error(f"Failed to initialize LLM model: {str(e)}")
+    except (ImportError, RuntimeError, Exception) as e:
+        logger.exception("Failed to initialize LLM model")
         # Fallback to API-based LLM if local model fails
         logger.info("Falling back to API-based LLM")
         return None
@@ -439,8 +441,8 @@ def perform_rag_query(query: str, top_k: int = 5, temperature: float = 0.7) -> D
             query_vector=query_embedding,
             limit=top_k
         )
-    except Exception as e:
-        logger.warning(f"Qdrant search failed: {str(e)}, returning empty results")
+    except (QdrantAPIException, Exception) as e:
+        logger.warning("Qdrant search failed, returning empty results", exc_info=True)
         search_results = []
     
     # Build context from search results
@@ -458,8 +460,8 @@ def perform_rag_query(query: str, top_k: int = 5, temperature: float = 0.7) -> D
     if llm_model_instance is None:
         try:
             initialize_llm_model()
-        except Exception as e:
-            logger.warning(f"Failed to initialize local LLM: {str(e)}, using fallback")
+        except (ImportError, RuntimeError, Exception) as e:
+            logger.warning("Failed to initialize local LLM, using fallback", exc_info=True)
     
     if llm_model_instance:
         # Use local LLM
@@ -476,8 +478,8 @@ Answer:"""
                 temperature=temperature
             )
             answer = response["choices"][0]["text"].strip()
-        except Exception as e:
-            logger.warning(f"LLM generation failed: {str(e)}, using fallback")
+        except (KeyError, IndexError, Exception) as e:
+            logger.warning("LLM generation failed, using fallback", exc_info=True)
             answer = f"Based on the retrieved documents:\n\n{context}\n\nQuestion: {query}"
     else:
         # Fallback: use retrieved context as answer
@@ -504,22 +506,22 @@ async def startup_event():
     try:
         initialize_qdrant()
         logger.info("Qdrant initialized successfully")
-    except Exception as e:
-        logger.warning(f"Qdrant initialization failed: {str(e)}")
+    except (OSError, ConnectionError, QdrantAPIException, Exception) as e:
+        logger.warning("Qdrant initialization failed", exc_info=True)
 
     # Initialize embedding model
     try:
         initialize_embedding_model()
         logger.info("Embedding model initialized successfully")
-    except Exception as e:
-        logger.error(f"Embedding model initialization failed: {str(e)}")
+    except (ImportError, RuntimeError, Exception) as e:
+        logger.exception("Embedding model initialization failed")
 
     # Initialize LLM model (optional)
     try:
         initialize_llm_model()
         logger.info("LLM model initialized successfully")
-    except Exception as e:
-        logger.warning(f"LLM model initialization failed: {str(e)}")
+    except (ImportError, RuntimeError, Exception) as e:
+        logger.warning("LLM model initialization failed", exc_info=True)
 
     logger.info("RAG server started successfully")
 
@@ -545,8 +547,8 @@ def _load_scanning_config() -> Optional[Dict[str, Any]]:
         with open(config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
         return config.get("directory_scanning")
-    except Exception as e:
-        logger.warning(f"Failed to load directory_scanning config: {str(e)}")
+    except (yaml.YAMLError, OSError, Exception) as e:
+        logger.warning("Failed to load directory_scanning config", exc_info=True)
         return None
 
 

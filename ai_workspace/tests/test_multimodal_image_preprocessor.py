@@ -8,11 +8,7 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-
-from src.multimodal.image_preprocessor import ImagePreprocessor, ImageCaptionExtractor
+from multimodal.image_preprocessor import ImagePreprocessor, ImageCaptionExtractor
 
 
 class TestImagePreprocessor(unittest.TestCase):

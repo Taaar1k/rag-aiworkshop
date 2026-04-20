@@ -5,15 +5,11 @@ Tests all DoD criteria from TASK-014
 
 import json
 import os
-import sys
 import tempfile
 import time
 import pytest
 from datetime import datetime
 from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from core.memory_persistence import (
     MemoryPersistence,

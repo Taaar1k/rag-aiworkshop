@@ -8,17 +8,10 @@ Tests cover:
 - DoD-8: Unit tests pass
 """
 
-import sys
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
 import pytest
 from fastapi.testclient import TestClient
 from slowapi.errors import RateLimitExceeded
 from starlette.requests import Request
-
-# Add ai_workspace to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "ai_workspace"))
 
 
 class TestRateLimiterModule:

@@ -10,15 +10,8 @@ Tests cover:
 - DoD-9: Unit tests pass
 """
 
-import sys
-from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
-
 import pytest
-
-
-# Add ai_workspace to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "ai_workspace"))
+from unittest.mock import MagicMock, patch, AsyncMock
 
 
 class TestHealthCheckModule:
@@ -217,9 +210,21 @@ class TestCheckLlamaCpp:
         checker = HealthChecker()
         mock_config = {"llm": {"endpoint": "http://localhost:8080/v1/chat/completions"}}
 
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"data": []}
+
+        async def mock_get(*args, **kwargs):
+            raise Exception("Connection refused")
+
+        mock_client = MagicMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = False
+        mock_client.get = mock_get
+
         with patch("builtins.open", MagicMock()), \
              patch("yaml.safe_load", return_value=mock_config), \
-             patch("requests.get", side_effect=Exception("Connection refused")):
+             patch("httpx.AsyncClient", return_value=mock_client):
 
             result = await checker.check_llama_cpp()
 
@@ -238,9 +243,14 @@ class TestCheckLlamaCpp:
         mock_response.json.return_value = {"data": [{"id": "model-1"}]}
         mock_config = {"llm": {"endpoint": "http://localhost:8080/v1/chat/completions"}}
 
+        mock_client = MagicMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = False
+        mock_client.get = AsyncMock(return_value=mock_response)
+
         with patch("builtins.open", MagicMock()), \
              patch("yaml.safe_load", return_value=mock_config), \
-             patch("requests.get", return_value=mock_response):
+             patch("httpx.AsyncClient", return_value=mock_client):
 
             result = await checker.check_llama_cpp()
 
@@ -259,9 +269,14 @@ class TestCheckLlamaCpp:
         mock_response.status_code = 503
         mock_config = {"llm": {"endpoint": "http://localhost:8080/v1/chat/completions"}}
 
+        mock_client = MagicMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = False
+        mock_client.get = AsyncMock(return_value=mock_response)
+
         with patch("builtins.open", MagicMock()), \
              patch("yaml.safe_load", return_value=mock_config), \
-             patch("requests.get", return_value=mock_response):
+             patch("httpx.AsyncClient", return_value=mock_client):
 
             result = await checker.check_llama_cpp()
 
@@ -279,7 +294,15 @@ class TestCheckEmbeddingServer:
         
         checker = HealthChecker()
 
-        with patch("requests.post", side_effect=Exception("Connection refused")):
+        async def mock_post(*args, **kwargs):
+            raise Exception("Connection refused")
+
+        mock_client = MagicMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = False
+        mock_client.post = mock_post
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
 
             result = await checker.check_embedding_server()
 
@@ -297,7 +320,12 @@ class TestCheckEmbeddingServer:
         mock_response.status_code = 200
         mock_response.json.return_value = {"data": [{"embedding": [0.1] * 768}]}
 
-        with patch("requests.post", return_value=mock_response):
+        mock_client = MagicMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = False
+        mock_client.post = AsyncMock(return_value=mock_response)
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
 
             result = await checker.check_embedding_server()
 

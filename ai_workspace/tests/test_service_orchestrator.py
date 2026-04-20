@@ -4,7 +4,6 @@ Tests all DoD criteria for TASK-015
 """
 
 import pytest
-import sys
 import os
 import time
 import signal
@@ -12,9 +11,6 @@ import tempfile
 import subprocess
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from core.service_orchestrator import (
     ServiceManager,

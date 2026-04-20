@@ -7,7 +7,7 @@ import torch
 from dataclasses import dataclass
 from enum import Enum
 
-from ..multimodal.image_encoder import ImageEncoder
+from .image_encoder import ImageEncoder
 
 
 class ModalityType(str, Enum):

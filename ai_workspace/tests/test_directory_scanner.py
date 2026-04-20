@@ -19,9 +19,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from watchfiles import Change
 
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from core.directory_scanner import DirectoryScannerWorker
 from core.incremental_index_manager import IncrementalIndexManager
 

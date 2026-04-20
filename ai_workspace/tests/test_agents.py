@@ -9,11 +9,6 @@ This module contains comprehensive tests for:
 
 import pytest
 from unittest.mock import Mock, MagicMock, patch
-import sys
-import os
-
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from agents.rag_agent import RAGAgent, AgentState, AgentRole
 from agents.planner import QueryPlanner, PlannedTask, TaskType

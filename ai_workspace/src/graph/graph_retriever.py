@@ -5,6 +5,7 @@ Implements graph-based retrieval using Neo4j for relationship-aware information 
 Supports entity extraction, graph traversal, and relationship-aware search.
 """
 
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -23,7 +24,7 @@ class GraphRetrieverConfig:
     """Configuration for graph retriever."""
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_username: str = "neo4j"
-    neo4j_password: str = "password"
+    neo4j_password: str = os.getenv("NEO4J_PASSWORD", "")
     traversal_depth: int = 2
     max_results: int = 10
     relationship_filter: str = "RELATED_TO>"
@@ -82,6 +83,13 @@ class GraphRetriever:
         if not self.config.neo4j_uri:
             print("Error: Neo4j URI not configured")
             return False
+            
+        # Fail loudly if Neo4j is enabled and password is missing
+        if self.config.neo4j_uri and not self.config.neo4j_password:
+            raise ValueError(
+                "NEO4J_PASSWORD environment variable is required when Neo4j is enabled. "
+                "Set it in your .env file or environment."
+            )
             
         try:
             self.driver = GraphDatabase.driver(

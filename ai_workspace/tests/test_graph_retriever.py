@@ -9,11 +9,7 @@ Tests cover:
 """
 
 import pytest
-import sys
 from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from graph.graph_retriever import GraphRetriever, GraphRetrieverConfig
 
@@ -27,7 +23,7 @@ class TestGraphRetrieverConfig:
         
         assert config.neo4j_uri == "bolt://localhost:7687"
         assert config.neo4j_username == "neo4j"
-        assert config.neo4j_password == "password"
+        assert config.neo4j_password == ""  # env var default, not hardcoded
         assert config.traversal_depth == 2
         assert config.max_results == 10
         assert config.relationship_filter == "RELATED_TO>"

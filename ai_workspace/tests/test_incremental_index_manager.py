@@ -18,10 +18,6 @@ from unittest.mock import MagicMock, patch, MagicMock as Mock
 
 import pytest
 
-# Ensure src is in path
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from core.incremental_index_manager import IncrementalIndexManager
 from core.memory_manager import MemoryManager, MemoryConfig
 

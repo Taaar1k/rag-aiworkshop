@@ -13,6 +13,8 @@ import time
 import logging
 import asyncio
 from typing import Dict, Any, Optional
+
+import httpx
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -123,7 +125,6 @@ class HealthChecker:
         """Check llama.cpp LLM server connectivity."""
         start = time.time()
         try:
-            import requests
             # Read LLM endpoint from config
             config_path = "./ai_workspace/config/default.yaml"
             import yaml
@@ -136,7 +137,8 @@ class HealthChecker:
             # Convert chat endpoint to models endpoint
             models_endpoint = endpoint.replace("/chat/completions", "/models")
 
-            response = requests.get(models_endpoint, timeout=5)
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.get(models_endpoint)
             latency = (time.time() - start) * 1000
 
             if response.status_code == 200:
@@ -168,11 +170,11 @@ class HealthChecker:
         """Check embedding model server connectivity."""
         start = time.time()
         try:
-            import requests
             # Try to generate an embedding via the local server
             endpoint = "http://localhost:8000/v1/embeddings"
             payload = {"input": "test", "model": "nomic-embed-text"}
-            response = requests.post(endpoint, json=payload, timeout=5)
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.post(endpoint, json=payload)
             latency = (time.time() - start) * 1000
 
             if response.status_code == 200:

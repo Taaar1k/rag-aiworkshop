@@ -4,11 +4,8 @@ Tests for Multi-Modal Support: Multimodal LLM
 
 import unittest
 from unittest.mock import Mock, MagicMock
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.multimodal.multimodal_llm import MultimodalLLM
+from multimodal.multimodal_llm import MultimodalLLM
 
 
 class TestMultimodalLLM(unittest.TestCase):

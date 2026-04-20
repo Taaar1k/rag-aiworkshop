@@ -306,6 +306,96 @@ class TestIntegration:
             pytest.skip(f"Integration test skipped: {str(e)}")
 
 
+# CORS Whitelist Tests (TASK-036)
+class TestCORSWhitelist:
+    """Tests for env-driven CORS whitelist (TASK-036)."""
+
+    def test_whitelisted_origin_returns_header(self, client):
+        """Whitelisted origin should receive Access-Control-Allow-Origin header."""
+        response = client.get("/health", headers={"Origin": "http://localhost:3000"})
+        assert response.status_code == 200
+        assert response.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+    def test_non_whitelisted_origin_no_header(self, client):
+        """Non-whitelisted origin should NOT receive Access-Control-Allow-Origin header."""
+        response = client.get("/health", headers={"Origin": "http://evil.example.com"})
+        assert response.status_code == 200
+        # FastAPI CORSMiddleware does not set the header for non-whitelisted origins
+        assert response.headers.get("access-control-allow-origin") is None
+
+
+# Error Path Status Code Tests (TASK-039)
+class TestErrorPathStatusCodes:
+    """Tests that narrowed exception handlers return correct status codes (TASK-039)."""
+
+    @pytest.fixture
+    def no_raise_client(self):
+        """Test client that does NOT raise on 5xx errors."""
+        from starlette.testclient import TestClient
+        from src.api.rag_server import app as rag_app
+        return TestClient(rag_app, raise_server_exceptions=False)
+
+    def test_rag_query_exception_returns_500(self, no_raise_client, monkeypatch):
+        """perform_rag_query exception should return 500, not swallow the error."""
+        from src.api import rag_server
+
+        original = rag_server.perform_rag_query
+        try:
+            monkeypatch.setattr(
+                rag_server,
+                "perform_rag_query",
+                lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("simulated failure")),
+            )
+            resp = no_raise_client.post(
+                "/rag/query",
+                json={"query": "test", "top_k": 5},
+            )
+            assert resp.status_code == 500
+            assert "detail" in resp.json()
+        finally:
+            rag_server.perform_rag_query = original
+
+    def test_embeddings_exception_returns_500(self, no_raise_client, monkeypatch):
+        """generate_embedding exception should return 500."""
+        from src.api import rag_server
+
+        original = rag_server.generate_embedding
+        try:
+            monkeypatch.setattr(
+                rag_server,
+                "generate_embedding",
+                lambda *a: (_ for _ in ()).throw(RuntimeError("embed fail")),
+            )
+            resp = no_raise_client.post(
+                "/v1/embeddings",
+                json={"model": "nomic-embed-text-v1.5", "input": "test"},
+            )
+            assert resp.status_code == 500
+            assert "detail" in resp.json()
+        finally:
+            rag_server.generate_embedding = original
+
+    def test_chat_completions_exception_returns_500(self, no_raise_client, monkeypatch):
+        """perform_rag_query exception in chat endpoint should return 500."""
+        from src.api import rag_server
+
+        original = rag_server.perform_rag_query
+        try:
+            monkeypatch.setattr(
+                rag_server,
+                "perform_rag_query",
+                lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("chat fail")),
+            )
+            resp = no_raise_client.post(
+                "/v1/chat/completions",
+                json={"model": "shared-rag-v1", "messages": [{"role": "user", "content": "test"}]},
+            )
+            assert resp.status_code == 500
+            assert "detail" in resp.json()
+        finally:
+            rag_server.perform_rag_query = original
+
+
 # Run tests
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

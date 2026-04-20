@@ -8,11 +8,7 @@ from pathlib import Path
 from PIL import Image
 import numpy as np
 
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-
-from src.multimodal.image_encoder import ImageEncoder
+from multimodal.image_encoder import ImageEncoder
 
 
 class TestImageEncoder(unittest.TestCase):
