@@ -3,7 +3,7 @@
 <!-- === DYNAMIC BADGE BAR === -->
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-v2026.04.20-6963ff?style=flat-square&logo=github&logoColor=white)](#release-notes) &nbsp;
+[![Version](https://img.shields.io/badge/version-v0.1.0-6963ff?style=flat-square&logo=github&logoColor=white)](#release-notes) &nbsp;
 [![Release Date](https://img.shields.io/badge/release-2026--04--20-6963ff?style=flat-square)](#release-notes) &nbsp;
 [![License: MIT](https://img.shields.io/badge/License-MIT-6963ff?style=flat-square)](./LICENSE) &nbsp;
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8+-6963ff?style=flat-square)](https://www.python.org/) &nbsp;
