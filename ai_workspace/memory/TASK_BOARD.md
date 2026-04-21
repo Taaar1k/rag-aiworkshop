@@ -5,6 +5,9 @@
 |---------|-------|-------------|------|---------|----------|
 | | | | TASK-025 | Directory Scanning & Auto-Indexing Feature | Code | strict | 2026-04-19 | P1 High |
 
+## REVIEW
+<!-- TASK-043 moved to DONE after PASS review -->
+
 ## IN_PROGRESS
 
 ## REVIEW
@@ -12,6 +15,7 @@
 ## DONE
 | Task ID | Title | Assigned To | Mode | Completed | Evidence |
 |---------|-------|-------------|------|---------|----------|
+| | | | TASK-043 | Remove Hardcoded Neo4j Port (7687) from src/ | Reviewer | light | 2026-04-21 | PASS review, 0 hardcoded ports in src/, 377 tests pass |
 | | | | TASK-042 | Replace Hardcoded Ports with Environment Variables + shared_rag/ Fix | Reviewer | strict | 2026-04-21 | PASS review, 24/24 health tests, all src/ files use os.getenv() |
 | | | | TASK-040 | Remove Dead ContextMemory & SessionMemory + Align Embedding Config | Code | strict | 2026-04-20 | PASS review, 8/8 DoD verified, 382 LOC, 307 passed |
 | | | | TASK-027 | Fix MemoryPersistence Data Loss Bug | Code | strict | 2026-04-19 | 28/28 tests pass (crash stress + memory persistence) |

@@ -95,7 +95,7 @@ class HealthChecker:
                 )
 
             from neo4j import GraphDatabase
-            uri = neo4j_config.get("uri", "bolt://localhost:7687")
+            uri = neo4j_config.get("uri", os.getenv("NEO4J_URI", "bolt://localhost:7687"))
             username = neo4j_config.get("username", "neo4j")
             password = neo4j_config.get("password", "password")
 
