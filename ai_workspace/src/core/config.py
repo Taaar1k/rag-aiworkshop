@@ -12,13 +12,13 @@ class Settings(BaseSettings):
     )
 
     # LLM Endpoint
-    llm_endpoint: str = "http://localhost:8080/v1/chat/completions"
+    llm_endpoint: str = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")
     llm_model_name: str = "Qwen3-Coder-Next-APEX-Compact"
     llm_timeout: int = 30
     llm_max_tokens: int = 1024
 
     # Embeddings Endpoint
-    embedding_endpoint: str = "http://localhost:8090/v1/embeddings"
+    embedding_endpoint: str = os.getenv("EMBEDDING_ENDPOINT", "http://localhost:8090/v1/embeddings")
     embedding_model_name: str = "nomic-embed-text-v1.5"
     embedding_timeout: int = 15
 
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     # Server
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = int(os.getenv("RAG_SERVER_PORT", "8000"))
 
     # Optional: Override via config files (future-proofing)
     config_file: Optional[str] = None

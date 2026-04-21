@@ -93,7 +93,7 @@ class ServiceManager:
             "mcp_server": ServiceConfig(
                 name="mcp_server",
                 command=["python", "src/mcp_server.py"],
-                health_check_url="http://localhost:8000/health",
+                health_check_url=f"http://localhost:{os.getenv('RAG_SERVER_PORT', '8000')}/health",
                 startup_timeout=15.0,
                 shutdown_timeout=5.0
             ),
@@ -111,7 +111,7 @@ class ServiceManager:
                     "-m", os.getenv("LLM_MODEL_PATH", "models/llm/default.gguf"),
                     "-c", "2048"
                 ],
-                health_check_url="http://localhost:8080/health",
+                health_check_url=os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions").replace("/v1/chat/completions", "/health"),
                 startup_timeout=30.0,
                 shutdown_timeout=5.0
             )

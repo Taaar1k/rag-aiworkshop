@@ -208,7 +208,8 @@ class TestCheckLlamaCpp:
         from src.api.health_check import HealthChecker, ComponentStatus
         
         checker = HealthChecker()
-        mock_config = {"llm": {"endpoint": "http://localhost:8080/v1/chat/completions"}}
+        import os
+        mock_config = {"llm": {"endpoint": os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")}}
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -235,13 +236,14 @@ class TestCheckLlamaCpp:
     @pytest.mark.asyncio
     async def test_llama_cpp_healthy(self):
         """Test llama.cpp check when server is running."""
+        import os
         from src.api.health_check import HealthChecker, ComponentStatus
         
         checker = HealthChecker()
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"data": [{"id": "model-1"}]}
-        mock_config = {"llm": {"endpoint": "http://localhost:8080/v1/chat/completions"}}
+        mock_config = {"llm": {"endpoint": os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")}}
 
         mock_client = MagicMock()
         mock_client.__aenter__.return_value = mock_client
@@ -267,7 +269,8 @@ class TestCheckLlamaCpp:
         checker = HealthChecker()
         mock_response = MagicMock()
         mock_response.status_code = 503
-        mock_config = {"llm": {"endpoint": "http://localhost:8080/v1/chat/completions"}}
+        import os
+        mock_config = {"llm": {"endpoint": os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")}}
 
         mock_client = MagicMock()
         mock_client.__aenter__.return_value = mock_client

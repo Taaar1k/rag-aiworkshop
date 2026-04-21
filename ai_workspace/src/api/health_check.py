@@ -9,6 +9,7 @@ Provides comprehensive health checks for all system components:
 - Directory scanner
 """
 
+import os
 import time
 import logging
 import asyncio
@@ -133,7 +134,7 @@ class HealthChecker:
                 config = yaml.safe_load(f)
 
             llm_config = config.get("llm", {})
-            endpoint = llm_config.get("endpoint", "http://localhost:8080/v1/chat/completions")
+            endpoint = llm_config.get("endpoint", os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions"))
             # Convert chat endpoint to models endpoint
             models_endpoint = endpoint.replace("/chat/completions", "/models")
 
@@ -171,7 +172,7 @@ class HealthChecker:
         start = time.time()
         try:
             # Try to generate an embedding via the local server
-            endpoint = "http://localhost:8000/v1/embeddings"
+            endpoint = os.getenv("EMBEDDING_ENDPOINT", "http://localhost:8090/v1/embeddings")
             payload = {"input": "test", "model": "nomic-embed-text"}
             async with httpx.AsyncClient(timeout=5) as client:
                 response = await client.post(endpoint, json=payload)

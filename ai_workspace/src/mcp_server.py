@@ -140,7 +140,7 @@ class DocumentManager:
             chunks.extend(text_splitter.split_text(doc))
         
         # Initialize embeddings
-        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL, model_kwargs={"trust_remote_code": True})
         
         # Create vector store
         self.vector_store = Chroma.from_texts(
@@ -156,7 +156,7 @@ class DocumentManager:
         if not self.vector_store:
             raise ValueError("Vector store not initialized")
         
-        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL, model_kwargs={"trust_remote_code": True})
         results = self.vector_store.similarity_search_with_score(
             query=query,
             k=top_k

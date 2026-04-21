@@ -2,6 +2,7 @@
 """
 Comprehensive test script for testing all RAG system components
 """
+import os
 import requests
 import json
 import time
@@ -40,7 +41,8 @@ class RAGSystemTester:
     def test_llm_server(self):
         """Test LLM Server"""
         try:
-            url = "http://localhost:8080/v1/models"
+            llm_endpoint = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")
+            url = llm_endpoint.replace("/chat/completions", "/models")
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 data = response.json()
@@ -61,7 +63,8 @@ class RAGSystemTester:
     def test_embedding_server(self):
         """Test Embedding Server"""
         try:
-            url = "http://localhost:8090/v1/models"
+            embedding_endpoint = os.getenv("EMBEDDING_ENDPOINT", "http://localhost:8090/v1/embeddings")
+            url = embedding_endpoint.replace("/v1/embeddings", "/v1/models")
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 data = response.json()
@@ -82,7 +85,8 @@ class RAGSystemTester:
     def test_embedding_endpoint(self):
         """Test embedding endpoint"""
         try:
-            url = "http://localhost:8090/v1/embeddings"
+            embedding_endpoint = os.getenv("EMBEDDING_ENDPOINT", "http://localhost:8090/v1/embeddings")
+            url = embedding_endpoint
             payload = {
                 "model": "nomic-embed-text-v1.5.Q4_K_M.gguf",
                 "input": "test text"
@@ -110,7 +114,8 @@ class RAGSystemTester:
     def test_rag_api_health(self):
         """Test RAG API health"""
         try:
-            url = "http://localhost:8000/health"
+            rag_port = os.getenv("RAG_SERVER_PORT", "8000")
+            url = f"http://localhost:{rag_port}/health"
             response = requests.get(url, timeout=30)
             if response.status_code == 200:
                 self.log("RAG API /health", "OK", "API is alive")
@@ -128,7 +133,8 @@ class RAGSystemTester:
     def test_rag_api_metrics(self):
         """Test RAG API metrics"""
         try:
-            url = "http://localhost:8000/metrics"
+            rag_port = os.getenv("RAG_SERVER_PORT", "8000")
+            url = f"http://localhost:{rag_port}/metrics"
             response = requests.get(url, timeout=10)
             if response.status_code in [200]:
                 self.log("RAG API /metrics", "OK", "Metrics available")
@@ -146,7 +152,8 @@ class RAGSystemTester:
     def test_chat_completion(self):
         """Test chat completions endpoint"""
         try:
-            url = "http://localhost:8000/v1/chat/completions"
+            rag_port = os.getenv("RAG_SERVER_PORT", "8000")
+            url = f"http://localhost:{rag_port}/v1/chat/completions"
             payload = {
                 "model": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
                 "messages": [
@@ -178,7 +185,8 @@ class RAGSystemTester:
     def test_rag_query(self):
         """Test RAG query"""
         try:
-            url = "http://localhost:8000/rag/query"
+            rag_port = os.getenv("RAG_SERVER_PORT", "8000")
+            url = f"http://localhost:{rag_port}/rag/query"
             payload = {
                 "query": "What is machine learning?",
                 "top_k": 5

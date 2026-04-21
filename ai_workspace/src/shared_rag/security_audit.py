@@ -3,11 +3,13 @@ Security audit script for Shared RAG Client SDK.
 Tests authentication, authorization, and data isolation.
 """
 
+import os
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from shared_rag.client import SharedRAGClient, AuthenticationError, APIError
+from typing import Optional
 import logging
 
 # Configure logging
@@ -18,7 +20,8 @@ logger = logging.getLogger(__name__)
 class SecurityAudit:
     """Security audit for the Shared RAG client."""
     
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: Optional[str] = None):
+        base_url = base_url or os.getenv("RAG_SERVER_URL", "http://localhost:8000")
         """
         Initialize the security audit.
         
@@ -237,7 +240,7 @@ class SecurityAudit:
 
 def main():
     """Run the security audit."""
-    audit = SecurityAudit(base_url="http://localhost:8000")
+    audit = SecurityAudit(base_url=os.getenv("RAG_SERVER_URL", "http://localhost:8000"))
     
     try:
         audit.run_audit()

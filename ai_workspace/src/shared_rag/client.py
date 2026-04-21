@@ -70,7 +70,7 @@ class SharedRAGClient:
     
     def __init__(
         self,
-        base_url: str = "http://localhost:8000",
+        base_url: Optional[str] = None,
         api_key: Optional[str] = None,
         timeout: float = 30.0,
         max_retries: int = 3,
@@ -86,7 +86,7 @@ class SharedRAGClient:
             max_retries: Maximum number of retry attempts
             verify_ssl: Whether to verify SSL certificates
         """
-        self.base_url = base_url.rstrip("/")
+        self.base_url = (base_url or os.getenv("RAG_SERVER_URL", "http://localhost:8000")).rstrip("/")
         self.api_key = api_key or os.environ.get("RAG_API_KEY")
         self.timeout = timeout
         self.max_retries = max_retries
@@ -390,7 +390,7 @@ class SharedRAGClient:
 # Convenience function for quick queries
 def quick_query(
     query: str,
-    base_url: str = "http://localhost:8000",
+    base_url: Optional[str] = None,
     api_key: Optional[str] = None
 ) -> str:
     """

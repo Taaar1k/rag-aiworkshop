@@ -116,7 +116,8 @@ class VectorMemory(MemoryBase):
     def _init_langchain_store(self):
         """Initialize LangChain vector store wrapper."""
         self.embeddings = HuggingFaceEmbeddings(
-            model_name=self.config.embedding_model
+            model_name=self.config.embedding_model,
+            model_kwargs={"trust_remote_code": True}
         )
         
         self.vector_store = Chroma(

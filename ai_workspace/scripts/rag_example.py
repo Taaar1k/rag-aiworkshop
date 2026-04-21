@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import requests
 import json
@@ -5,7 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from llama_cpp import Llama
 
 # 1. SETUP: Embedding server address (running via llama.cpp on port 8090)
-EMBEDDING_API_URL = "http://127.0.0.1:8090/v1/embeddings"
+EMBEDDING_API_URL = os.getenv("EMBEDDING_ENDPOINT", "http://127.0.0.1:8090/v1/embeddings")
 MODEL_NAME = "nomic-embed-text-v1.5"
 
 # Function to get embedding via HTTP request to llama.cpp server

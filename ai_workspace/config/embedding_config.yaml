@@ -1,5 +1,6 @@
 # Embedding model configuration
 # Server port: 8090 (local llama.cpp server)
+# Port can be overridden via EMBEDDING_PORT environment variable
 
 model:
   # Path to embedding model file (absolute or relative from project root)
@@ -9,7 +10,7 @@ model:
   # Model name (for identification in logs)
   model_name: "nomic-embed-text-v1.5"
   
-  # Port on which embedding server listens
+  # Port on which embedding server listens (default: 8090, override: EMBEDDING_PORT)
   port: 8090
   
   # Endpoint for requests to embedding model
@@ -22,7 +23,7 @@ server:
   # Host on which embedding server runs
   host: "127.0.0.1"
   
-  # Server port (must be unique, no conflicts with other models)
+  # Server port (must be unique, no conflicts with other models; default: 8090, override: EMBEDDING_PORT)
   port: 8090
   
   # Maximum number of threads for processing requests

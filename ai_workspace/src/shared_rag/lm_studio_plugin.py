@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LMStudioPluginConfig:
     """Configuration for the LM Studio plugin."""
-    rag_api_url: str = "http://localhost:8000"
+    rag_api_url: Optional[str] = None
     api_key: Optional[str] = None
     default_top_k: int = 5
     default_temperature: float = 0.7
@@ -253,7 +253,7 @@ class LMStudioRAGPlugin:
 
 
 def create_lm_studio_plugin(
-    rag_api_url: str = "http://localhost:8000",
+    rag_api_url: Optional[str] = None,
     api_key: Optional[str] = None
 ) -> LMStudioRAGPlugin:
     """
@@ -266,8 +266,9 @@ def create_lm_studio_plugin(
     Returns:
         Configured LMStudioRAGPlugin instance
     """
+    actual_url = rag_api_url or os.getenv("RAG_SERVER_URL", "http://localhost:8000")
     config = LMStudioPluginConfig(
-        rag_api_url=rag_api_url,
+        rag_api_url=actual_url,
         api_key=api_key
     )
     return LMStudioRAGPlugin(config=config)

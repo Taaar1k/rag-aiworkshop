@@ -3,9 +3,10 @@ Performance benchmarking script for Shared RAG Client SDK.
 Tests query latency to ensure it meets the < 500ms requirement.
 """
 
+import os
 import time
 import statistics
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 
 # Add src to path
@@ -25,7 +26,7 @@ class PerformanceBenchmark:
     
     def __init__(
         self,
-        base_url: str = "http://localhost:8000",
+        base_url: Optional[str] = None,
         api_key: str = None,
         num_samples: int = 10
     ):
@@ -37,7 +38,8 @@ class PerformanceBenchmark:
             api_key: API key for authentication
             num_samples: Number of samples to collect
         """
-        self.client = SharedRAGClient(base_url=base_url, api_key=api_key)
+        actual_url = base_url or os.getenv("RAG_SERVER_URL", "http://localhost:8000")
+        self.client = SharedRAGClient(base_url=actual_url, api_key=api_key)
         self.num_samples = num_samples
         self.latencies: List[float] = []
         
@@ -168,7 +170,7 @@ def main():
     
     # Initialize benchmark
     benchmark = PerformanceBenchmark(
-        base_url="http://localhost:8000",
+        base_url=os.getenv("RAG_SERVER_URL", "http://localhost:8000"),
         api_key=None,  # Set API key if needed
         num_samples=5  # 5 samples per query
     )
