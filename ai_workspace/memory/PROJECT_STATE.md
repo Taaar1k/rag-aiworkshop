@@ -60,6 +60,7 @@
 - Consider god-object decomposition (MemoryManager ~382 LOC after TASK-040, ServiceOrchestrator 521 LOC) — explicitly out of scope for this bundle
 
 ## Change Log
+- 2026-04-21: TASK-044 DONE — Fixed hardcoded config path in health_check.py (0 hardcoded paths, 24/24 tests pass, runtime verified)
 - 2026-04-20: TASK-040 DONE — Removed ContextMemory & SessionMemory dead code (382 LOC), aligned embedding model default, PASS review
 - 2026-04-20: SPEC-2026-04-20-PRODUCTION-HARDENING bundle COMPLETE
 - 2026-04-20: TASK-039 DONE — Narrowed 14 bare except Exception blocks in rag_server.py
