@@ -63,14 +63,28 @@ if _config_path.exists():
 
 @asynccontextmanager
 async def lifespan(app_fastapi: FastAPI):
-    # Startup
     logger.info("RAG server lifespan startup...")
+    
+    # Initialize scanner
     await initialize_scanner(_dir_scan_config)
     await start_scanner()
+    
+    # Initialize services into app.state
+    app_fastapi.state.qdrant = initialize_qdrant()
+    
+    embeddings = initialize_embedding_model()
+    app_fastapi.state.embeddings = embeddings
+    app_fastapi.state.embed_fn = embeddings.embed_documents if embeddings else None
+    
+    app_fastapi.state.llm = initialize_llm_model()
+    
     yield
-    # Shutdown
+    
     logger.info("RAG server lifespan shutdown...")
     await stop_scanner()
+    
+    if app_fastapi.state.qdrant:
+        app_fastapi.state.qdrant.close()
 
 
 # Initialize FastAPI app with lifespan
@@ -114,10 +128,21 @@ app.include_router(scanner_router, prefix="/scanner", tags=["scanner"])
 
 # Global instances
 settings = Settings()
-qdrant_client_instance: Optional[qdrant_client.QdrantClient] = None
-embedding_model_instance: Any = None
-llm_model_instance: Any = None
-directory_scanner_instance: Any = None
+
+
+def get_qdrant():
+    """Get Qdrant client from app state."""
+    return getattr(app.state, "qdrant", None)
+
+
+def get_embeddings():
+    """Get embedding model from app state."""
+    return getattr(app.state, "embeddings", None)
+
+
+def get_llm():
+    """Get LLM model from app state."""
+    return getattr(app.state, "llm", None)
 
 
 # Pydantic Models for OpenAI-compatible API
@@ -310,16 +335,16 @@ async def rag_query(request: Request, body: RAGQueryRequest):
 @app.post("/rag/index")
 @limiter.limit("1000 per minute")
 async def index_document(request: Request, document: Document):
-    """
-    Index a document into the vector store.
-    """
+    """Index a document into the vector store."""
     try:
-        # Generate embedding for the document
         embedding = generate_embedding(document.text)
+        qdrant = get_qdrant()
         
-        # Store in Qdrant — wrap blocking SDK call in thread pool
+        if qdrant is None:
+            raise HTTPException(status_code=503, detail="Vector store not available")
+        
         def _upsert():
-            qdrant_client_instance.upsert(
+            qdrant.upsert(
                 collection_name="rag_documents",
                 points=[PointStruct(
                     id=document.id,
@@ -334,7 +359,9 @@ async def index_document(request: Request, document: Document):
         await asyncio.to_thread(_upsert)
         
         return {"status": "success", "document_id": document.id}
-    except (QdrantAPIException, ValueError, KeyError, Exception) as e:
+    except HTTPException:
+        raise
+    except Exception as e:
         logger.exception("Error indexing document")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -345,107 +372,93 @@ def initialize_qdrant():
     
     Returns None if Qdrant is not available (graceful degradation).
     """
-    global qdrant_client_instance
-    
     try:
         host = os.getenv("QDRANT_HOST", "localhost")
         port = int(os.getenv("QDRANT_PORT", 6333))
         
-        qdrant_client_instance = qdrant_client.QdrantClient(host=host, port=port)
+        client = qdrant_client.QdrantClient(host=host, port=port)
         
-        # Create collection if it doesn't exist
         collection_name = "rag_documents"
-        if not qdrant_client_instance.collection_exists(collection_name):
-            qdrant_client_instance.create_collection(
+        if not client.collection_exists(collection_name):
+            client.create_collection(
                 collection_name=collection_name,
                 vectors_config=VectorParams(
-                    size=768,  # Default embedding dimension
+                    size=768,
                     distance=Distance.COSINE
                 )
             )
         logger.info(f"Initialized Qdrant client at {host}:{port}")
         
-        return qdrant_client_instance
-    except (OSError, ConnectionError, QdrantAPIException, Exception) as e:
+        return client
+    except Exception as e:
         logger.warning("Qdrant initialization failed, running in offline mode", exc_info=True)
-        qdrant_client_instance = None
         return None
 
 
 def initialize_embedding_model():
     """Initialize sentence-transformers model."""
-    global embedding_model_instance
-    
     try:
         from sentence_transformers import SentenceTransformer
         
         model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-        embedding_model_instance = SentenceTransformer(model_name)
+        model = SentenceTransformer(model_name)
         logger.info(f"Initialized embedding model: {model_name}")
         
-        return embedding_model_instance
-    except (ImportError, RuntimeError, Exception) as e:
-        logger.exception("Failed to initialize embedding model")
-        raise
+        return model
+    except Exception as e:
+        logger.warning("Embedding model initialization failed", exc_info=True)
+        return None
 
 
 def generate_embedding(text: str) -> List[float]:
     """Generate embedding for a single text."""
-    if embedding_model_instance is None:
-        initialize_embedding_model()
+    embeddings = get_embeddings()
+    if embeddings is None:
+        raise RuntimeError("Embedding model not available")
     
-    embedding = embedding_model_instance.encode(text)
+    embedding = embeddings.encode(text)
     return embedding.tolist()
 
 
 def initialize_llm_model():
     """Initialize GGUF model via llama.cpp."""
-    global llm_model_instance
-    
     try:
         from llama_cpp import Llama
         
         model_path = os.getenv("LLM_MODEL_PATH", "models/llm/default.gguf")
         
-        llm_model_instance = Llama(
+        model = Llama(
             model_path=model_path,
             n_ctx=2048,
             n_threads=4,
-            n_gpu_layers=0  # CPU only for now
+            n_gpu_layers=0
         )
         
         logger.info(f"Initialized LLM model: {model_path}")
-        return llm_model_instance
-    except (ImportError, RuntimeError, Exception) as e:
-        logger.exception("Failed to initialize LLM model")
-        # Fallback to API-based LLM if local model fails
-        logger.info("Falling back to API-based LLM")
+        return model
+    except Exception as e:
+        logger.warning("LLM initialization failed, using fallback", exc_info=True)
         return None
 
 
 def perform_rag_query(query: str, top_k: int = 5, temperature: float = 0.7) -> Dict[str, Any]:
-    """
-    Perform RAG query: vector search + LLM generation.
-    """
-    # Search vector store
-    if qdrant_client_instance is None:
-        initialize_qdrant()
+    """Perform RAG query: vector search + LLM generation."""
+    qdrant = get_qdrant()
+    llm = get_llm()
     
-    # Generate query embedding
     query_embedding = generate_embedding(query)
     
-    # Search Qdrant
-    try:
-        search_results = qdrant_client_instance.search(
-            collection_name="rag_documents",
-            query_vector=query_embedding,
-            limit=top_k
-        )
-    except (QdrantAPIException, Exception) as e:
-        logger.warning("Qdrant search failed, returning empty results", exc_info=True)
-        search_results = []
+    search_results = []
+    if qdrant:
+        try:
+            search_results = qdrant.search(
+                collection_name="rag_documents",
+                query_vector=query_embedding,
+                limit=top_k
+            )
+        except Exception as e:
+            logger.warning("Qdrant search failed, returning empty results", exc_info=True)
     
-    # Build context from search results
     context = "\n\n".join([hit.payload.get("text", "") for hit in search_results])
     sources = [
         {
@@ -456,15 +469,7 @@ def perform_rag_query(query: str, top_k: int = 5, temperature: float = 0.7) -> D
         for hit in search_results
     ]
     
-    # Generate response with LLM
-    if llm_model_instance is None:
-        try:
-            initialize_llm_model()
-        except (ImportError, RuntimeError, Exception) as e:
-            logger.warning("Failed to initialize local LLM, using fallback", exc_info=True)
-    
-    if llm_model_instance:
-        # Use local LLM
+    if llm:
         prompt = f"""Context: {context}
 
 Question: {query}
@@ -472,17 +477,16 @@ Question: {query}
 Answer:"""
         
         try:
-            response = llm_model_instance(
+            response = llm(
                 prompt,
                 max_tokens=512,
                 temperature=temperature
             )
             answer = response["choices"][0]["text"].strip()
-        except (KeyError, IndexError, Exception) as e:
+        except Exception as e:
             logger.warning("LLM generation failed, using fallback", exc_info=True)
             answer = f"Based on the retrieved documents:\n\n{context}\n\nQuestion: {query}"
     else:
-        # Fallback: use retrieved context as answer
         answer = f"Based on the retrieved documents:\n\n{context}\n\nQuestion: {query}"
     
     return {
@@ -494,116 +498,6 @@ Answer:"""
             "top_k": top_k
         }
     }
-
-
-# Startup event (kept for backward compatibility; scanner now uses lifespan)
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on server startup."""
-    logger.info("Starting RAG server...")
-
-    # Initialize Qdrant
-    try:
-        initialize_qdrant()
-        logger.info("Qdrant initialized successfully")
-    except (OSError, ConnectionError, QdrantAPIException, Exception) as e:
-        logger.warning("Qdrant initialization failed", exc_info=True)
-
-    # Initialize embedding model
-    try:
-        initialize_embedding_model()
-        logger.info("Embedding model initialized successfully")
-    except (ImportError, RuntimeError, Exception) as e:
-        logger.exception("Embedding model initialization failed")
-
-    # Initialize LLM model (optional)
-    try:
-        initialize_llm_model()
-        logger.info("LLM model initialized successfully")
-    except (ImportError, RuntimeError, Exception) as e:
-        logger.warning("LLM model initialization failed", exc_info=True)
-
-    logger.info("RAG server started successfully")
-
-
-# Shutdown event (kept for backward compatibility; scanner now uses lifespan)
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on server shutdown."""
-    logger.info("Shutting down RAG server...")
-
-    if qdrant_client_instance:
-        qdrant_client_instance.close()
-
-    logger.info("RAG server shutdown complete")
-
-
-def _load_scanning_config() -> Optional[Dict[str, Any]]:
-    """Load directory_scanning config from default.yaml."""
-    config_path = Path(__file__).parent.parent.parent / "config" / "default.yaml"
-    if not config_path.exists():
-        return None
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = yaml.safe_load(f)
-        return config.get("directory_scanning")
-    except (yaml.YAMLError, OSError, Exception) as e:
-        logger.warning("Failed to load directory_scanning config", exc_info=True)
-        return None
-
-
-def _init_directory_scanner():
-    """Initialize DirectoryScannerWorker from config."""
-    global directory_scanner_instance
-    config = _load_scanning_config()
-    if not config:
-        logger.info("No directory_scanning config found. Scanning disabled.")
-        return
-
-    enabled = config.get("enabled", True)
-    if not enabled:
-        logger.info("Directory scanning is disabled (enabled: false).")
-        return
-
-    watched_dirs = config.get("watched_directories", [])
-    if not watched_dirs:
-        logger.info("No watched directories configured. Scanning disabled.")
-        return
-
-    state_file = config.get("state", {}).get("persistence_file", "./ai_workspace/memory/index_state.json")
-    debounce_ms = config.get("scan", {}).get("debounce_ms", 500)
-    poll_interval_s = config.get("scan", {}).get("poll_interval_s", 60)
-    allowed_exts = config.get("allowed_extensions", [".txt", ".md", ".json", ".csv"])
-    chunk_size = config.get("indexing", {}).get("chunk_size", 512)
-    chunk_overlap = config.get("indexing", {}).get("chunk_overlap", 50)
-
-    # Initialize MemoryManager and IncrementalIndexManager
-    from core.memory_manager import MemoryManager, MemoryConfig
-    from core.incremental_index_manager import IncrementalIndexManager
-
-    mem_config = MemoryConfig()
-    mem_manager = MemoryManager(mem_config)
-    index_mgr = IncrementalIndexManager(
-        memory_manager=mem_manager,
-        state_file=state_file,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        allowed_extensions=allowed_exts,
-    )
-
-    # Create DirectoryScannerWorker
-    from core.directory_scanner import DirectoryScannerWorker
-    directory_scanner_instance = DirectoryScannerWorker(
-        index_manager=index_mgr,
-        watched_directories=watched_dirs,
-        debounce_ms=debounce_ms,
-        poll_interval_s=poll_interval_s,
-        enabled=True,
-    )
-
-    # Start the scanner
-    asyncio.get_event_loop().run_until_complete(directory_scanner_instance.start())
-    logger.info("Directory scanner initialized and started")
 
 
 if __name__ == "__main__":
