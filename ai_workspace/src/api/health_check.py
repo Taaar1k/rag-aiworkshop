@@ -44,10 +44,30 @@ class HealthChecker:
 
     def __init__(self):
         self._check_cache: Dict[str, ComponentHealth] = {}
-        self._cache_ttl: float = 5.0  # Cache results for 5 seconds
+        self._cache_ttl: float = 5.0
         self._last_check: float = 0
-        # Resolve config path relative to this file, not CWD
         self._config_path: Path = Path(__file__).resolve().parent.parent.parent / "config" / "default.yaml"
+
+    def _load_config(self, section: str) -> Dict[str, Any]:
+        """Load config section from YAML or return empty dict."""
+        try:
+            if self._config_path.exists():
+                with open(self._config_path, 'r') as f:
+                    config = yaml.safe_load(f)
+                    return config.get(section, {}) if config else {}
+        except Exception:
+            pass
+        return {}
+
+    def _load_yaml_config(self) -> Dict[str, Any]:
+        """Load full YAML config."""
+        try:
+            if self._config_path.exists():
+                with open(self._config_path, 'r') as f:
+                    return yaml.safe_load(f) or {}
+        except Exception:
+            pass
+        return {}
 
     async def check_chromadb(self) -> ComponentHealth:
         """Check ChromaDB connectivity."""
@@ -81,17 +101,8 @@ class HealthChecker:
         """Check Neo4j connectivity (if configured)."""
         start = time.time()
         try:
-            import yaml
-
-            # Graceful fallback: if config file is missing, use env vars
-            if self._config_path.exists():
-                with open(self._config_path, 'r') as f:
-                    config = yaml.safe_load(f)
-                neo4j_config = config.get("neo4j", {})
-            else:
-                logger.info(f"Config file not found at {self._config_path}, using env vars for Neo4j")
-                neo4j_config = {}
-
+            neo4j_config = self._load_config("neo4j")
+            
             if not neo4j_config.get("enabled", False):
                 return ComponentHealth(
                     name="neo4j",
@@ -119,12 +130,10 @@ class HealthChecker:
             finally:
                 driver.close()
         except Exception as e:
-            latency = (time.time() - start) * 1000
-            logger.warning(f"Neo4j health check failed: {e}")
             return ComponentHealth(
                 name="neo4j",
                 status=ComponentStatus.UNHEALTHY,
-                latency_ms=latency,
+                latency_ms=(time.time() - start) * 1000,
                 message=str(e)
             )
 
@@ -132,30 +141,18 @@ class HealthChecker:
         """Check llama.cpp LLM server connectivity."""
         start = time.time()
         try:
-            import yaml
-
-            # Graceful fallback: if config file is missing, use env vars
-            if self._config_path.exists():
-                with open(self._config_path, 'r') as f:
-                    config = yaml.safe_load(f)
-                llm_config = config.get("llm", {})
-            else:
-                logger.info(f"Config file not found at {self._config_path}, using env vars for LLM")
-                llm_config = {}
-
+            llm_config = self._load_config("llm")
             endpoint = llm_config.get("endpoint", os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions"))
-            # Convert chat endpoint to models endpoint
             models_endpoint = endpoint.replace("/chat/completions", "/models")
 
             async with httpx.AsyncClient(timeout=5) as client:
                 response = await client.get(models_endpoint)
-            latency = (time.time() - start) * 1000
 
             if response.status_code == 200:
                 return ComponentHealth(
                     name="llama_cpp",
                     status=ComponentStatus.HEALTHY,
-                    latency_ms=latency,
+                    latency_ms=(time.time() - start) * 1000,
                     message="LLM server responding",
                     details={"models": response.json().get("data", [])}
                 )
@@ -163,16 +160,14 @@ class HealthChecker:
                 return ComponentHealth(
                     name="llama_cpp",
                     status=ComponentStatus.UNHEALTHY,
-                    latency_ms=latency,
+                    latency_ms=(time.time() - start) * 1000,
                     message=f"LLM server returned {response.status_code}"
                 )
         except Exception as e:
-            latency = (time.time() - start) * 1000
-            logger.warning(f"llama.cpp health check failed: {e}")
             return ComponentHealth(
                 name="llama_cpp",
                 status=ComponentStatus.UNHEALTHY,
-                latency_ms=latency,
+                latency_ms=(time.time() - start) * 1000,
                 message=str(e)
             )
 

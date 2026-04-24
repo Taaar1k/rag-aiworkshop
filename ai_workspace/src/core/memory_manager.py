@@ -129,6 +129,16 @@ class VectorMemory:
         self._client.delete_collection(self.collection_name)
         self._init()
 
+    def get_stats(self) -> Dict[str, Any]:
+        """Get collection statistics."""
+        count = self._collection.count()
+        return {
+            "collection_name": self.collection_name,
+            "vector_count": count,
+            "max_size": self.config.max_collection_size,
+            "is_overloaded": count >= self.config.max_collection_size
+        }
+
 
 class MemoryManager:
     """Factory for creating vector memories."""

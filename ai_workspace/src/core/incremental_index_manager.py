@@ -81,13 +81,12 @@ class IncrementalIndexManager:
             else list(SUPPORTED_LOADERS.keys())
         )
 
-        # Ensure state file directory exists
+        # Create text splitter
+        self.text_splitter = self._create_text_splitter()
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Get vector memory for this model_id
         self.vector_memory = self.memory_manager.get_vector_memory(model_id)
-        # Update text splitter with configured chunk settings
-        self.vector_memory.text_splitter = self._create_text_splitter()
 
     def _create_text_splitter(self):
         """Create a RecursiveCharacterTextSplitter with configured settings."""
@@ -314,10 +313,7 @@ class IncrementalIndexManager:
                 logger.warning("Path is not a directory, skipping: %s", dir_path)
                 continue
 
-            if self.vector_memory.text_splitter:
-                recursive = True  # Always recursive for directory scanning
-            else:
-                recursive = True
+            recursive = True
 
             if recursive:
                 candidate_files = list(p.rglob("*"))
