@@ -19,20 +19,53 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from langchain_community.document_loaders import (
-    TextLoader,
-    JSONLoader,
-    CSVLoader,
-)
-try:
-    from langchain_community.document_loaders import UnstructuredMarkdownLoader as MarkdownLoader
-except ImportError:
-    MarkdownLoader = None
 from langchain_core.documents import Document
 
 from .memory_manager import MemoryManager, MemoryConfig
 
 logger = logging.getLogger(__name__)
+
+
+class TextLoader:
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+    
+    def load(self) -> List[Document]:
+        with open(self.file_path, "r", encoding="utf-8") as f:
+            text = f.read()
+        return [Document(page_content=text, metadata={})]
+
+
+class MarkdownLoader:
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+    
+    def load(self) -> List[Document]:
+        with open(self.file_path, "r", encoding="utf-8") as f:
+            text = f.read()
+        return [Document(page_content=text, metadata={})]
+
+
+class JSONLoader:
+    def __init__(self, file_path: str, jq_schema: str = "."):
+        self.file_path = file_path
+        self.jq_schema = jq_schema
+    
+    def load(self) -> List[Document]:
+        with open(self.file_path, "r", encoding="utf-8") as f:
+            text = f.read()
+        return [Document(page_content=text, metadata={})]
+
+
+class CSVLoader:
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+    
+    def load(self) -> List[Document]:
+        with open(self.file_path, "r", encoding="utf-8") as f:
+            text = f.read()
+        return [Document(page_content=text, metadata={})]
+
 
 # Supported loaders mapping (lowercase extensions)
 SUPPORTED_LOADERS = {
@@ -242,7 +275,7 @@ class IncrementalIndexManager:
         try:
             # Add documents to vector memory (handles chunking internally)
             for doc in docs:
-                self.vector_memory.add(doc)
+                self.vector_memory.add(doc.page_content, doc.metadata)
             count = len(docs)
             logger.info("Indexed %d chunk(s) from %s", count, filepath)
             return count

@@ -19,7 +19,7 @@ install_rag_cli() {
 export RAG_ROOT="$RAG_ROOT"
 
 rag() {
-    cd "$RAG_ROOT" && python scripts/rag_cli.py "${1:-status}"
+    cd "$RAG_ROOT" && python scripts/rag_cli.py "$@"
 }
 
 alias rag-set="rag set-embedding"

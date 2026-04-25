@@ -243,25 +243,45 @@ Examples:
     # start
     start_parser = subparsers.add_parser("start", help="Start RAG server", add_help=False)
     
+    # workspace
+    workspace_parser = subparsers.add_parser("workspace", help="Set workspace folder to scan")
+    workspace_parser.add_argument("path", nargs="*", help="Folder path")
+    
     # stop
     subparsers.add_parser("stop", help="Stop all servers")
 
     args = parser.parse_args()
     
-    # Handle start specially for help
+    # Handle start - start the server
     if args.command == "start":
         rag_root = get_rag_root()
-        print(f"""
-{BOLD}RAG Server:{RESET}
-
-To start the server, run in terminal:
-
-  cd {rag_root}
-  PYTHONPATH={rag_root} uvicorn src.api.rag_server:app --host 0.0.0.0 --port 8000
-
-Options:
-  -h, --help    Show this help message
-""")
+        
+        import subprocess
+        import os
+        
+        print(f"\n{BOLD}Starting RAG Server on port 8000...{RESET}\n")
+        
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(rag_root)
+        
+        try:
+            subprocess.Popen(
+                ["python", "-m", "uvicorn", "src.api.rag_server:app", 
+                 "--host", "0.0.0.0", "--port", "8000"],
+                cwd=str(rag_root),
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            ok(f"RAG server started!")
+            print(f"   Check: curl http://localhost:8000/health")
+            print(f"   Logs: tail -f /tmp/rag_server.log")
+        except Exception as e:
+            err(f"Failed to start: {e}")
+            print(f"\nManual start:")
+            print(f"  cd {rag_root}")
+            print(f"  PYTHONPATH={rag_root} uvicorn src.api.rag_server:app --host 0.0.0.0 --port 8000")
+        
         return
     
     if args.command == "status" or args.command is None:
@@ -276,6 +296,71 @@ Options:
     
     elif args.command == "config":
         show_config()
+    
+    elif args.command == "workspace":
+        folder_parts = args.path or []
+        folder = " ".join(folder_parts) if folder_parts else None
+        
+        if folder is None or folder == "show":
+            # Show current workspace
+            rag_root = get_rag_root()
+            config_path = rag_root / "config" / "default.yaml"
+            content = config_path.read_text()
+            for line in content.split("\n"):
+                if 'path:' in line and 'watched' not in line:
+                    current = line.split('"')[1] if '"' in line else None
+                    if current:
+                        ok(f"Current workspace: {current}")
+                        return
+            err("No workspace configured")
+            return
+        
+        folder_path = Path(folder).resolve()
+        
+        if not folder_path.exists():
+            err(f"Folder not found: {folder}")
+            return
+        
+        if not folder_path.is_dir():
+            err(f"Not a directory: {folder}")
+            return
+        
+        rag_root = get_rag_root()
+        config_path = rag_root / "config" / "default.yaml"
+        
+        content = config_path.read_text()
+        
+        # Find watched_directories and replace the path
+        lines = content.split("\n")
+        new_lines = []
+        in_watched = False
+        path_replaced = False
+        
+        for line in lines:
+            if "watched_directories:" in line:
+                in_watched = True
+                new_lines.append(line)
+            elif in_watched and "- path:" in line:
+                new_lines.append(f'    - path: "{folder_path}"')
+                path_replaced = True
+                in_watched = False
+            else:
+                new_lines.append(line)
+        
+        if not path_replaced:
+            # Insert after watched_directories if not found
+            new_lines = []
+            for line in lines:
+                new_lines.append(line)
+                if "watched_directories:" in line:
+                    new_lines.append(f'    - path: "{folder_path}"')
+                    new_lines.append(f'      recursive: true')
+                    path_replaced = True
+        
+        new_content = "\n".join(new_lines)
+        config_path.write_text(new_content)
+        ok(f"Set workspace: {folder_path}")
+        info("Restart scanner or reindex for changes")
     
     elif args.command == "stop":
         import subprocess

@@ -4,9 +4,6 @@ llm:
   timeout: 30
   max_tokens: 2048
 
-# Embeddings configuration moved to config/embedding_config.yaml
-# Please refer to that file for embedding-specific settings
-
 retrieval:
   top_k: 5
   hybrid_search: true
@@ -21,9 +18,7 @@ server:
 directory_scanning:
   enabled: true
   watched_directories:
-    - path: "./data/documents"
-      recursive: true
-    - path: "./data/knowledge-base"
+    - path: "/home/tarik/Sandbox/C.E.H. - Core Engine Hub/Tarik"
       recursive: true
   allowed_extensions:
     - ".txt"
