@@ -420,8 +420,9 @@ def initialize_embedding_model():
         # Use sentence-transformers
         try:
             from sentence_transformers import SentenceTransformer
-            model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-            model = SentenceTransformer(model_name)
+            # Use nomic for consistency with API (768 dims)
+            model_name = os.getenv("EMBEDDING_MODEL", "nomic-ai/nomic-embed-text-v1.5")
+            model = SentenceTransformer(model_name, trust_remote_code=True)
             logger.info(f"Initialized sentence-transformers model: {model_name}")
             return {"type": "transformers", "model": model}
         except Exception as e:
