@@ -1,7 +1,11 @@
-import os
+import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 from typing import Optional
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -11,41 +15,51 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
-    # LLM Endpoint
-    llm_endpoint: str = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")
+    # LLM Endpoint (required)
+    llm_endpoint: str = Field(default="http://localhost:8080/v1/chat/completions")
     llm_model_name: str = "Qwen3-Coder-Next-APEX-Compact"
-    llm_timeout: int = 30
-    llm_max_tokens: int = 1024
+    llm_timeout: int = Field(default=30, ge=1, le=300)
+    llm_max_tokens: int = Field(default=1024, ge=1, le=8192)
 
     # Embeddings Endpoint
-    embedding_endpoint: str = os.getenv("EMBEDDING_ENDPOINT", "http://localhost:8090/v1/embeddings")
+    embedding_endpoint: str = Field(default="http://localhost:8090/v1/embeddings")
     embedding_model_name: str = "nomic-embed-text-v1.5"
-    embedding_timeout: int = 15
+    embedding_timeout: int = Field(default=15, ge=1, le=60)
 
     # Retrieval Settings
-    top_k: int = 5
+    top_k: int = Field(default=5, ge=1, le=100)
     hybrid_search: bool = True
     rerank: bool = True
-    chunk_size: int = 512
-    chunk_overlap: int = 50
+    chunk_size: int = Field(default=512, ge=100, le=2048)
+    chunk_overlap: int = Field(default=50, ge=0, le=512)
 
     # Server
     host: str = "0.0.0.0"
-    port: int = int(os.getenv("RAG_SERVER_PORT", "8000"))
+    port: int = Field(default=8000, ge=1, le=65535)
 
-    # Optional: Override via config files (future-proofing)
+    # Optional: Override via config files
     config_file: Optional[str] = None
+
+    def validate_required(self) -> bool:
+        """Validate required environment variables."""
+        required = ["llm_endpoint"]
+        missing = [k for k in required if not getattr(self, k, None)]
+        if missing:
+            logger.warning(f"Missing required config: {missing}")
+            return False
+        return True
 
     @classmethod
     def load_from_yaml(cls, path: str = "config/default.yaml"):
         """Load settings from YAML file (if exists)"""
         import yaml
-        path = Path(path)
-        if path.exists():
-            with open(path, 'r', encoding='utf-8') as f:
+        p = Path(path)
+        if p.exists():
+            with open(p, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
                 return cls(**config)
         return cls()
+
 
 # Global instance
 settings = Settings.load_from_yaml()

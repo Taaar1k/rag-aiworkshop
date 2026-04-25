@@ -13,13 +13,12 @@ from pathlib import Path
 from datetime import datetime
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import qdrant_client
-from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FilterSelector, FieldCondition, MatchValue
-from qdrant_client.http.exceptions import ApiException as QdrantAPIException
+from qdrant_client.models import VectorParams, Distance, PointStruct
 from slowapi.errors import RateLimitExceeded
 
 # Add src to path for imports
@@ -31,7 +30,7 @@ except ImportError:
     from ..core.config import Settings
 
 # Import rate limiter
-from .rate_limiter import limiter, rate_limit_exceeded_handler, get_rate_limit_for_user
+from .rate_limiter import limiter, rate_limit_exceeded_handler
 
 # Import health checker
 from .health_check import health_checker
@@ -43,12 +42,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import scanner manager
+# Load embedding config
+_embedding_config_path = Path(__file__).parent.parent.parent / "config" / "embedding_config.yaml"
+EMBEDDING_CONFIG = {}
+if _embedding_config_path.exists():
+    with open(_embedding_config_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        # Render template variables {{port}}
+        port = os.getenv("EMBEDDING_PORT", "8090")
+        content = content.replace("{{port}}", port)
+        EMBEDDING_CONFIG = yaml.safe_load(content) or {}
+
+# Determine embedding source from config or env: "local_api" or "sentence_transformers"
+EMBEDDING_SOURCE = os.getenv("EMBEDDING_SOURCE", "local_api")
 from .scanner_manager import (
     initialize_scanner,
     start_scanner,
     stop_scanner,
-    get_scanner_status,
     router as scanner_router,
 )
 
@@ -74,7 +84,6 @@ async def lifespan(app_fastapi: FastAPI):
     
     embeddings = initialize_embedding_model()
     app_fastapi.state.embeddings = embeddings
-    app_fastapi.state.embed_fn = embeddings.embed_documents if embeddings else None
     
     app_fastapi.state.llm = initialize_llm_model()
     
@@ -136,7 +145,7 @@ def get_qdrant():
 
 
 def get_embeddings():
-    """Get embedding model from app state."""
+    """Get embedding model config from app state."""
     return getattr(app.state, "embeddings", None)
 
 
@@ -361,7 +370,7 @@ async def index_document(request: Request, document: Document):
         return {"status": "success", "document_id": document.id}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Error indexing document")
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -390,34 +399,65 @@ def initialize_qdrant():
         logger.info(f"Initialized Qdrant client at {host}:{port}")
         
         return client
-    except Exception as e:
+    except Exception:
         logger.warning("Qdrant initialization failed, running in offline mode", exc_info=True)
         return None
 
 
 def initialize_embedding_model():
-    """Initialize sentence-transformers model."""
-    try:
-        from sentence_transformers import SentenceTransformer
+    """Initialize embedding model (local API or sentence-transformers based on config)."""
+    use_local_api = EMBEDDING_SOURCE == "local_api"
+    
+    if use_local_api:
+        # Use local llama.cpp API
+        model_config = EMBEDDING_CONFIG.get("model", {})
+        endpoint = model_config.get("endpoint", "http://localhost:8090/v1/embeddings")
+        timeout = model_config.get("timeout", 15)
         
-        model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-        model = SentenceTransformer(model_name)
-        logger.info(f"Initialized embedding model: {model_name}")
-        
-        return model
-    except Exception as e:
-        logger.warning("Embedding model initialization failed", exc_info=True)
-        return None
+        logger.info(f"Using local embedding API: {endpoint}")
+        return {"type": "api", "endpoint": endpoint, "timeout": timeout}
+    else:
+        # Use sentence-transformers
+        try:
+            from sentence_transformers import SentenceTransformer
+            model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+            model = SentenceTransformer(model_name)
+            logger.info(f"Initialized sentence-transformers model: {model_name}")
+            return {"type": "transformers", "model": model}
+        except Exception as e:
+            logger.warning(f"Embedding model init failed: {e}")
+            return None
 
 
 def generate_embedding(text: str) -> List[float]:
-    """Generate embedding for a single text."""
+    """Generate embedding via local API or sentence-transformers."""
     embeddings = get_embeddings()
     if embeddings is None:
         raise RuntimeError("Embedding model not available")
     
-    embedding = embeddings.encode(text)
-    return embedding.tolist()
+    if embeddings.get("type") == "api":
+        # Use local API
+        import httpx
+        endpoint = embeddings["endpoint"]
+        timeout = embeddings.get("timeout", 15)
+        
+        try:
+            with httpx.Client(timeout=timeout) as client:
+                response = client.post(
+                    endpoint,
+                    json={"input": text, "model": "nomic-embed-text-v1.5"}
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data["data"][0]["embedding"]
+        except Exception as e:
+            logger.error(f"Embedding API failed: {e}")
+            raise RuntimeError(f"Embedding API failed: {e}")
+    else:
+        # Use sentence-transformers
+        model = embeddings.get("model")
+        embedding = model.encode(text)
+        return embedding.tolist()
 
 
 def initialize_llm_model():
@@ -436,7 +476,7 @@ def initialize_llm_model():
         
         logger.info(f"Initialized LLM model: {model_path}")
         return model
-    except Exception as e:
+    except Exception:
         logger.warning("LLM initialization failed, using fallback", exc_info=True)
         return None
 
@@ -456,7 +496,7 @@ def perform_rag_query(query: str, top_k: int = 5, temperature: float = 0.7) -> D
                 query_vector=query_embedding,
                 limit=top_k
             )
-        except Exception as e:
+        except Exception:
             logger.warning("Qdrant search failed, returning empty results", exc_info=True)
     
     context = "\n\n".join([hit.payload.get("text", "") for hit in search_results])
@@ -483,7 +523,7 @@ Answer:"""
                 temperature=temperature
             )
             answer = response["choices"][0]["text"].strip()
-        except Exception as e:
+        except Exception:
             logger.warning("LLM generation failed, using fallback", exc_info=True)
             answer = f"Based on the retrieved documents:\n\n{context}\n\nQuestion: {query}"
     else:

@@ -116,112 +116,141 @@ Every feature below was planned, implemented, tested, and verified by agents fol
 
 ## Quick Start
 
-### 1. Clone and Install
+### 1. Install CLI
 
 ```bash
-git clone https://github.com/<your-user>/rag-workshop.git
-cd rag-workshop/ai_workspace
-./install_deps.sh
+cd ai_workspace/scripts
+./install_rag_cli.sh install
+source ~/.zshrc  # або source ~/.bashrc для bash
 ```
 
-> **Note for Arch Linux / Externally-Managed Environments:** If you see `error: externally-managed-environment`, use the automated installer `./install_deps.sh` which creates a proper virtual environment.
-
-### 2. Download Models
-
-**Embedding model:**
-```bash
-python -c "from huggingface_hub import snapshot_download; \
-  snapshot_download(repo_id='nomic-ai/nomic-embed-text-v1.5', \
-  local_dir='./models/embeddings', allow_patterns='*.gguf')"
-```
-
-**LLM model:** Place your GGUF model (e.g., `Llama-3-8B-Instruct-Q4_K_M.gguf`) in `models/llm/`.
-
-### 3. Configure Environment
+### 2. Check Status
 
 ```bash
-cp .env.example .env
-# Edit .env with your model paths and settings
+rag status
 ```
 
-### 4. Start Services
+**Результат:**
+```
+RAG System Status
+========================================
+[i] Checking embedding server on port 8090...
+[✓] Running: nomic-embed-text-v1.5.Q4_K_M.gguf
+  Dimension: 768
+  Size: 79.5 MB
+
+[i] Checking LLM server on port 8080...
+[✓] Running: Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
+  Vocabulary: 248320
+  Context: 262144
+  Size: 20.81 GB
+
+[i] Checking Qdrant on port 6333...
+[✗] Qdrant not running on port 6333
+```
+
+### 3. CLI Команди
 
 ```bash
-source .venv/bin/activate
+rag status      # Статус всіх серверів
+rag test       # Тест генерації ембедінгів
+rag config     # Показати конфігурацію
+rag set local  # Змінити джерело embeddings (local / sentence_transformers)
 
-# Start llama.cpp servers (embeddings on :8090, LLM on :8080)
-# Then start the RAG server and MCP server:
-python src/api/rag_server.py    # FastAPI on :8000
-python src/mcp_server.py        # MCP server
+rag-start     # Запустити RAG сервер на порту 8000
 ```
 
-**Or use the service orchestrator:**
+### 4. Без інсталяції (з будь-якої папки)
+
 ```bash
-bash scripts/core_start.sh   # Start all services
-bash scripts/core_stop.sh    # Stop all services
+export RAG_ROOT=/home/tarik/Sandbox/my-plugin/rag-project/ai_workspace
+python $RAG_ROOT/scripts/rag_cli.py status
+python $RAG_ROOT/scripts/rag_cli.py test
 ```
 
-### 5. Directory Scanning (Optional)
+---
 
-Add documents to the watched directories configured in [`config/default.yaml`](ai_workspace/config/default.yaml):
+## Конфігурація
 
-```yaml
-directory_scanning:
-  enabled: true
-  watched_directories:
-    - path: "./data/documents"
-      recursive: true
-  allowed_extensions:
-    - ".txt"
-    - ".md"
-    - ".json"
-    - ".csv"
+### Зміна джерела Embeddings
+
+**Локальний API (default):**
+```bash
+rag set local
+# Використовує порт 8090 (nomic-embed-text-v1.5)
 ```
 
-The system will automatically index new files and re-index modified ones.
+**Sentence-Transformers (HF):**
+```bash
+rag set sentence_transformers
+# Використовує SentenceTransformer з HuggingFace
+```
 
-**Full setup walkthrough:** [`ai_workspace/SETUP_GUIDE.md`](ai_workspace/SETUP_GUIDE.md).
+### Environment Variables
+
+Основні змінні в `.env`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EMBEDDING_SOURCE` | `local_api` | Джерело embeddings (`local_api` або `sentence_transformers`) |
+| `LLM_ENDPOINT` | `http://localhost:8080/v1/chat/completions` | LLM server |
+| `EMBEDDING_ENDPOINT` | `http://localhost:8090/v1/embeddings` | Embedding server |
+| `RAG_SERVER_PORT` | `8000` | RAG API порт |
 
 ---
 
 ## Configuration
 
-### Environment Variables
-
-Copy [`.env.example`](ai_workspace/.env.example) to `.env` and adjust:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LLM_MODEL_PATH` | `models/llm/default.gguf` | Path to LLM GGUF model file |
-| `LLM_MODEL_NAME` | `Llama-3-8B-Instruct` | Model name for logging |
-| `LLM_ENDPOINT` | `http://localhost:8080/v1/chat/completions` | LLM server API endpoint |
-| `EMBEDDING_MODEL_PATH` | `./models/embeddings/nomic-embed-text-v1.5.Q4_K_M.gguf` | Embedding model path |
-| `EMBEDDING_MODEL_NAME` | `nomic-ai/nomic-embed-text-v1.5` | Embedding model identifier |
-| `CHROMA_PERSIST_DIR` | `./chroma_db` | ChromaDB persistent storage |
-| `RAG_SERVER_PORT` | `8000` | RAG server port |
-| `LLAMA_SERVER_PORT` | `8080` | llama.cpp server port |
-| `JWT_SECRET_KEY` | `change-me-in-production` | JWT secret for auth |
-
-### YAML Configuration Files
+### Configuration Files
 
 | File | Purpose |
 |------|---------|
 | [`config/default.yaml`](ai_workspace/config/default.yaml) | LLM endpoint, chunk_size, top_k, directory scanning |
-| [`config/embedding_config.yaml`](ai_workspace/config/embedding_config.yaml) | Embedding model settings |
+| [`config/embedding_config.yaml`](ai_workspace/config/embedding_config.yaml) | **Embedding model settings (порт 8090)** |
 | [`config/models.yaml`](ai_workspace/config/models.yaml) | Model configurations |
 | [`config/rag_server.yaml`](ai_workspace/config/rag_server.yaml) | RAG server settings |
-| [`config/services.yaml`](ai_workspace/config/services.yaml) | Service definitions (MCP, LLM, Embeddings) |
+| [`config/services.yaml`](ai_workspace/config/services.yaml) | Service definitions |
 | [`config/memory_persistence.yaml`](ai_workspace/config/memory_persistence.yaml) | Memory persistence settings |
 
-### Key Configuration Parameters
+### Embedding Configuration (`embedding_config.yaml`)
 
 ```yaml
+model:
+  model_path: "./models/embeddings/nomic-embed-text-v1.5.Q4_K_M.gguf"
+  model_name: "nomic-embed-text-v1.5"
+  port: 8090
+  endpoint: "http://localhost:{{port}}/v1/embeddings"
+  timeout: 15
+
+server:
+  host: "127.0.0.1"
+  port: 8090
+  max_workers: 4
+
 retrieval:
-  top_k: 5           # Number of retrieved documents
-  hybrid_search: true # Hybrid search enabled
-  rerank: true        # Cross-encoder reranker enabled
-  chunk_size: 512     # Chunk size (tokens)
-  chunk_overlap: 50   # Chunk overlap (tokens)
+  top_k: 5
+  hybrid_search: true
+  rerank: true
+  chunk_size: 512
+  chunk_overlap: 50
+```
+
+### Environment Variables (.env)
+
+```bash
+# LLM Configuration
+LLM_MODEL_PATH=models/llm/default.gguf
+LLM_MODEL_NAME=Llama-3-8B-Instruct
+LLM_ENDPOINT=http://localhost:8080/v1/chat/completions
+
+# Embedding Configuration  
+EMBEDDING_MODEL_PATH=./models/embeddings/nomic-embed-text-v1.5.Q4_K_M.gguf
+EMBEDDING_MODEL_NAME=nomic-ai/nomic-embed-text-v1.5
+EMBEDDING_ENDPOINT=http://localhost:8090/v1/embeddings
+EMBEDDING_PORT=8090
+
+# EMBEDDING_SOURCE: local_api (default) або sentence_transformers
+EMBEDDING_SOURCE=local_api
 ```
 
 ---
