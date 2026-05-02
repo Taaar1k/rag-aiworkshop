@@ -1,0 +1,39 @@
+directory_scanning:
+  allowed_extensions:
+  - .txt
+  - .md
+  - .json
+  - .csv
+  enabled: true
+  indexing:
+    chunk_overlap: 50
+    chunk_size: 512
+  scan:
+    debounce_ms: 500
+    poll_interval_s: 60
+    recursive: true
+  state:
+    persistence_file: ./memory/index_state.json
+  watched_directories:
+    - path: "/home/tarik/CORE"
+      recursive: true
+llm:
+  endpoint: http://localhost:8080/v1/chat/completions
+  max_tokens: 2048
+  model_name: Qwen3.5-35B-A3B-APEX-Compact
+  timeout: 30
+rate_limiting:
+  anonymous_limit: 100 per minute
+  authenticated_limit: 1000 per minute
+  burst_limit: 20 per minute
+  enabled: true
+  storage_uri: memory://
+retrieval:
+  chunk_overlap: 50
+  chunk_size: 512
+  hybrid_search: true
+  rerank: true
+  top_k: 5
+server:
+  host: 0.0.0.0
+  port: 8000
