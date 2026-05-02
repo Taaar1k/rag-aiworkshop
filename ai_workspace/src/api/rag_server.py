@@ -17,6 +17,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+import chromadb
 import qdrant_client
 from qdrant_client.models import VectorParams, Distance, PointStruct
 from slowapi.errors import RateLimitExceeded
@@ -105,7 +106,7 @@ app = FastAPI(
 )
 
 # Add CORS middleware — env-driven whitelist (SPEC-2026-04-20-PRODUCTION-HARDENING)
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:8080").split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -344,32 +345,31 @@ async def rag_query(request: Request, body: RAGQueryRequest):
 @app.post("/rag/index")
 @limiter.limit("1000 per minute")
 async def index_document(request: Request, document: Document):
-    """Index a document into the vector store."""
+    """Index a document into the same ChromaDB store used by the directory scanner."""
     try:
-        embedding = generate_embedding(document.text)
-        qdrant = get_qdrant()
-        
-        if qdrant is None:
-            raise HTTPException(status_code=503, detail="Vector store not available")
-        
-        def _upsert():
-            qdrant.upsert(
-                collection_name="rag_documents",
-                points=[PointStruct(
-                    id=document.id,
-                    vector=embedding,
-                    payload={
-                        "text": document.text,
-                        **document.metadata
-                    }
-                )]
+        def _index():
+            client = chromadb.PersistentClient(path="./ai_workspace/memory/chroma_db")
+            collection = client.get_or_create_collection(
+                name="rag_directory_scanner",
+                metadata={"hnsw:space": "cosine"},
             )
-        
-        await asyncio.to_thread(_upsert)
-        
-        return {"status": "success", "document_id": document.id}
-    except HTTPException:
-        raise
+            metadata = {
+                "source": document.metadata.get("source", document.id),
+                "model_id": "directory_scanner",
+                "type": "vector",
+                **document.metadata,
+            }
+            memory_id = document.id
+            collection.upsert(
+                documents=[document.text],
+                embeddings=[generate_embedding(document.text)],
+                metadatas=[metadata],
+                ids=[memory_id],
+            )
+            return memory_id
+
+        memory_id = await asyncio.to_thread(_index)
+        return {"status": "success", "document_id": document.id, "memory_id": memory_id}
     except Exception:
         logger.exception("Error indexing document")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -483,32 +483,44 @@ def initialize_llm_model():
 
 
 def perform_rag_query(query: str, top_k: int = 5, temperature: float = 0.7) -> Dict[str, Any]:
-    """Perform RAG query: vector search + LLM generation."""
-    qdrant = get_qdrant()
+    """Perform RAG query against the ChromaDB store populated by the scanner."""
     llm = get_llm()
-    
-    query_embedding = generate_embedding(query)
-    
-    search_results = []
-    if qdrant:
-        try:
-            search_results = qdrant.search(
-                collection_name="rag_documents",
-                query_vector=query_embedding,
-                limit=top_k
-            )
-        except Exception:
-            logger.warning("Qdrant search failed, returning empty results", exc_info=True)
-    
-    context = "\n\n".join([hit.payload.get("text", "") for hit in search_results])
-    sources = [
-        {
-            "id": hit.id,
-            "score": hit.score,
-            "text": hit.payload.get("text", "")[:200] + "..."
-        }
-        for hit in search_results
-    ]
+
+    result_documents: List[str] = []
+    result_metadatas: List[Dict[str, Any]] = []
+    result_ids: List[str] = []
+    result_distances: List[float] = []
+
+    try:
+        client = chromadb.PersistentClient(path="./ai_workspace/memory/chroma_db")
+        collection = client.get_or_create_collection(
+            name="rag_directory_scanner",
+            metadata={"hnsw:space": "cosine"},
+        )
+        results = collection.query(
+            query_embeddings=[generate_embedding(query)],
+            n_results=top_k,
+        )
+        result_documents = (results.get("documents") or [[]])[0]
+        result_metadatas = (results.get("metadatas") or [[]])[0]
+        result_ids = (results.get("ids") or [[]])[0]
+        result_distances = (results.get("distances") or [[]])[0]
+    except Exception:
+        logger.warning("ChromaDB search failed, returning empty results", exc_info=True)
+
+    context = "\n\n".join(result_documents)
+    sources = []
+    for i, doc_content in enumerate(result_documents):
+        metadata = result_metadatas[i] if i < len(result_metadatas) and result_metadatas[i] else {}
+        source = metadata.get("source", "")
+        distance = result_distances[i] if i < len(result_distances) else None
+        sources.append({
+            "id": result_ids[i] if i < len(result_ids) else "",
+            "score": None if distance is None else 1 - distance,
+            "source": source,
+            "filename": Path(source).name if source else "",
+            "text": doc_content[:200] + ("..." if len(doc_content) > 200 else ""),
+        })
     
     if llm:
         prompt = f"""Context: {context}

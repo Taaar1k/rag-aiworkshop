@@ -1,341 +1,205 @@
 """
-FastMCP RAG Server - MCP protocol implementation with LangChain and ChromaDB
+FastMCP adapter for the CORE RAG API.
+
+This MCP server intentionally does not implement its own RAG engine.
+It is a thin adapter over the FastAPI RAG service so Pi, MCP clients,
+the CLI, and the scanner all use the same source of truth:
+
+    scanner -> ChromaDB rag_directory_scanner -> /rag/query -> MCP tools
 """
-import os
-import asyncio
+
+from __future__ import annotations
+
 import json
-import logging
-from typing import Optional
+import os
 from pathlib import Path
+from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
 
 from fastmcp import FastMCP
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+mcp = FastMCP("core-rag-api-adapter")
 
-# MCP Server initialization
-mcp = FastMCP("rag-mcp-server")
+RAG_API_BASE_URL = os.getenv("RAG_API_BASE_URL", "http://localhost:8000").rstrip("/")
+DEFAULT_TIMEOUT = float(os.getenv("RAG_API_TIMEOUT", "30"))
 
-# Configuration
-CHROMA_PERSIST_DIR = "./chroma_db"
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL_NAME", "nomic-ai/nomic-embed-text-v1.5")
-LLM_ENDPOINT = os.getenv("LLM_ENDPOINT", "http://localhost:8080/v1/chat/completions")
-LLM_MODEL = os.getenv("LLM_MODEL_NAME", None)  # Will auto-detect if not set
 
-def detect_available_models(endpoint: str, timeout: int = 5) -> list[str]:
-    """
-    Detect available models from the LLM server's /v1/models endpoint.
-    
-    Supports OpenAI-compatible API format (LM Studio, Ollama, vLLM, etc.)
-    
-    Args:
-        endpoint: LLM chat/completions endpoint URL
-        timeout: Timeout in seconds for the request
-        
-    Returns:
-        List of available model IDs
-    """
-    # Extract base URL (remove /v1/chat/completions or similar path)
-    base_url = endpoint
-    for suffix in ["/v1/chat/completions", "/v1/completions", "/chat/completions", "/completions"]:
-        if endpoint.endswith(suffix):
-            base_url = endpoint[:-len(suffix)]
-            break
-    
-    models_url = f"{base_url}/v1/models"
-    
+def _request_json(
+    method: str,
+    path: str,
+    payload: dict[str, Any] | None = None,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> dict[str, Any]:
+    """Call the local RAG API and return parsed JSON."""
+    url = f"{RAG_API_BASE_URL}{path}"
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    req = Request(url, data=body, method=method.upper())
+    req.add_header("Content-Type", "application/json")
+
     try:
-        req = Request(models_url, method="GET")
-        req.add_header("Content-Type", "application/json")
-        
         with urlopen(req, timeout=timeout) as response:
-            data = json.loads(response.read().decode("utf-8"))
-            
-        model_ids = []
-        
-        # Try different response formats
-        if "data" in data and isinstance(data["data"], list):
-            model_ids = [m["id"] if isinstance(m, dict) and "id" in m else m for m in data["data"]]
-        elif "models" in data and isinstance(data["models"], list):
-            model_ids = [m["id"] if isinstance(m, dict) and "id" in m else m for m in data["models"]]
-            
-        logger.info(f"Detected {len(model_ids)} models: {model_ids}")
-        return model_ids
-        
-    except (URLError, HTTPError, Exception) as e:
-        logger.warning(f"Could not detect models from {models_url}: {e}")
-        return []
-
-def get_default_model(endpoint: str) -> str:
-    """
-    Get the default model name. First tries to auto-detect from server,
-    then falls back to hardcoded default.
-    
-    Args:
-        endpoint: LLM endpoint URL
-        
-    Returns:
-        Model name to use
-    """
-    # If explicitly set via env var, use it
-    explicit_model = os.getenv("LLM_MODEL_NAME")
-    if explicit_model:
-        logger.info(f"Using explicitly configured model: {explicit_model}")
-        return explicit_model
-    
-    # Try to auto-detect
-    available = detect_available_models(endpoint)
-    if available:
-        default = available[0]
-        logger.info(f"Using auto-detected default model: {default}")
-        return default
-    
-    # Hardcoded fallback
-    fallback = "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"
-    logger.warning(f"No models detected, using hardcoded fallback: {fallback}")
-    return fallback
-
-# Auto-detect model at startup
-LLM_MODEL = get_default_model(LLM_ENDPOINT)
-
-# Global variables
-vector_store: Optional[Chroma] = None
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=512,
-    chunk_overlap=50,
-    separators=["\n\n", "\n", " ", ""]
-)
+            raw = response.read().decode("utf-8")
+            return json.loads(raw) if raw else {}
+    except HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"RAG API HTTP {exc.code} for {path}: {details}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"RAG API unavailable at {RAG_API_BASE_URL}: {exc}") from exc
 
 
-class DocumentManager:
-    """Manages document loading and vector storage"""
-    
-    def __init__(self):
-        self.documents = []
-        self.vector_store = None
-        
-    def load_documents(self, file_path: str) -> list[str]:
-        """Load documents from file"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                self.documents.append(content)
-                return [content]
-        except Exception as e:
-            raise ValueError(f"Error loading document: {e}")
-    
-    def create_vector_store(self) -> Chroma:
-        """Create ChromaDB vector store from documents"""
-        if not self.documents:
-            raise ValueError("No documents loaded")
-        
-        # Split documents into chunks
-        chunks = []
-        for doc in self.documents:
-            chunks.extend(text_splitter.split_text(doc))
-        
-        # Initialize embeddings
-        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL, model_kwargs={"trust_remote_code": True})
-        
-        # Create vector store
-        self.vector_store = Chroma.from_texts(
-            texts=chunks,
-            embedding=embeddings,
-            persist_directory=CHROMA_PERSIST_DIR
+def _format_sources(sources: list[dict[str, Any]]) -> str:
+    if not sources:
+        return "No sources returned."
+
+    lines: list[str] = []
+    for i, source in enumerate(sources, 1):
+        filename = source.get("filename") or Path(source.get("source", "")).name or "unknown"
+        source_path = source.get("source", "")
+        score = source.get("score")
+        text = source.get("text", "")
+
+        score_line = f"Score: {score:.4f}" if isinstance(score, (int, float)) else "Score: n/a"
+        lines.append(
+            f"Result {i}: {filename}\n"
+            f"Source: {source_path}\n"
+            f"{score_line}\n"
+            f"Text:\n{text}"
         )
-        
-        return self.vector_store
-    
-    def search(self, query: str, top_k: int = 5) -> list[str]:
-        """Search for relevant documents"""
-        if not self.vector_store:
-            raise ValueError("Vector store not initialized")
-        
-        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL, model_kwargs={"trust_remote_code": True})
-        results = self.vector_store.similarity_search_with_score(
-            query=query,
-            k=top_k
-        )
-        
-        return [doc.page_content for doc, score in results]
-
-
-# Initialize document manager
-doc_manager = DocumentManager()
+    return "\n\n---\n\n".join(lines)
 
 
 @mcp.tool()
 async def search(query: str, top_k: int = 5) -> str:
     """
-    Search for relevant documents in the knowledge base.
-    
+    Search indexed CORE/RAG documents through the RAG API.
+
     Args:
-        query: Search query string
-        top_k: Number of results to return (default: 5)
-    
+        query: Search query string.
+        top_k: Number of results to return.
+
     Returns:
-        Formatted string with search results
+        Formatted source snippets from /rag/query.
     """
     try:
-        # Initialize vector store if not exists
-        if not doc_manager.vector_store:
-            doc_manager.create_vector_store()
-        
-        # Perform search
-        results = doc_manager.search(query, top_k)
-        
-        # Format results
-        formatted_results = []
-        for i, result in enumerate(results, 1):
-            formatted_results.append(f"Result {i}:\n{result}\n")
-        
-        return "\n---\n".join(formatted_results)
-    
-    except Exception as e:
-        return f"Search error: {str(e)}"
+        data = _request_json("POST", "/rag/query", {"query": query, "top_k": top_k})
+        return _format_sources(data.get("sources", []))
+    except Exception as exc:
+        return f"Search error: {exc}"
 
 
 @mcp.tool()
 async def ask(question: str, context: str = "") -> str:
     """
-    Generate an answer to a question using the LLM.
-    
+    Ask a question through the RAG API.
+
     Args:
-        question: The question to answer
-        context: Optional context to include in the prompt
-    
+        question: The question to answer.
+        context: Optional extra context prepended to the question.
+
     Returns:
-        Generated answer from the LLM
+        Answer from /rag/query plus source summary.
     """
     try:
-        # Prepare prompt
-        if context:
-            prompt = f"""
-You are a helpful assistant. Answer the question using ONLY the provided context.
-If the answer is not in the context, say "I don't know".
-
-CONTEXT:
-{context}
-
-QUESTION:
-{question}
-
-ANSWER:
-"""
-        else:
-            prompt = f"""
-You are a helpful assistant. Answer the following question:
-
-QUESTION:
-{question}
-
-ANSWER:
-"""
-        
-        # Call LLM via HTTP
-        import requests
-        response = requests.post(
-            LLM_ENDPOINT,
-            json={
-                "model": LLM_MODEL,
-                "messages": [
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                "max_tokens": 512,
-                "temperature": 0.1
-            },
-            headers={"Content-Type": "application/json"}
-        )
-        
-        if response.status_code != 200:
-            return f"LLM error: {response.status_code} - {response.text}"
-        
-        result = response.json()
-        answer = result['choices'][0]['message']['content'].strip()
-        
-        return answer
-    
-    except Exception as e:
-        return f"Answer error: {str(e)}"
+        query = f"{context}\n\n{question}" if context else question
+        data = _request_json("POST", "/rag/query", {"query": query, "top_k": 5})
+        answer = data.get("answer", "")
+        sources = data.get("sources", [])
+        return f"{answer}\n\nSources:\n{_format_sources(sources)}"
+    except Exception as exc:
+        return f"Answer error: {exc}"
 
 
 @mcp.tool()
 async def add_document(file_path: str) -> str:
     """
-    Add a document to the knowledge base.
-    
+    Add a file directly to the RAG API index.
+
+    This writes to the same ChromaDB collection used by the scanner.
+
     Args:
-        file_path: Path to the document file
-    
+        file_path: Path to a text-like document file.
+
     Returns:
-        Status message
+        Status message from /rag/index.
     """
     try:
-        doc_manager.load_documents(file_path)
-        
-        # Create or rebuild vector store with new document
-        doc_manager.create_vector_store()
-        
-        return f"Document added successfully from {file_path}"
-    
-    except Exception as e:
-        return f"Error adding document: {str(e)}"
+        path = Path(file_path).expanduser().resolve()
+        if not path.exists():
+            return f"Error adding document: file not found: {path}"
+        if not path.is_file():
+            return f"Error adding document: not a file: {path}"
+
+        text = path.read_text(encoding="utf-8")
+        payload = {
+            "id": str(path),
+            "text": text,
+            "metadata": {
+                "source": str(path),
+                "filename": path.name,
+                "ingest_method": "mcp_add_document",
+            },
+        }
+        data = _request_json("POST", "/rag/index", payload)
+        return f"Document indexed via RAG API: {data}"
+    except Exception as exc:
+        return f"Error adding document: {exc}"
 
 
 @mcp.tool()
 async def list_documents() -> str:
     """
-    List all documents in the knowledge base.
-    
+    List files tracked by the RAG scanner state.
+
     Returns:
-        Formatted list of documents
+        Formatted list of indexed/scanned source files.
     """
     try:
-        if not doc_manager.documents:
-            return "No documents loaded"
-        
-        formatted_list = []
-        for i, doc in enumerate(doc_manager.documents, 1):
-            formatted_list.append(f"Document {i}: {len(doc)} characters")
-        
-        return "\n".join(formatted_list)
-    
-    except Exception as e:
-        return f"Error listing documents: {str(e)}"
+        state_path = Path("./ai_workspace/memory/index_state.json")
+        if not state_path.exists():
+            fallback = Path("./memory/index_state.json")
+            state_path = fallback if fallback.exists() else state_path
+
+        if not state_path.exists():
+            return "No scanner state file found. Start the RAG API/scanner first."
+
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        files = sorted(state.get("files", {}).keys())
+        if not files:
+            return "No documents tracked by scanner."
+
+        lines = [f"Tracked documents: {len(files)}", f"Last scan: {state.get('last_scan')}", ""]
+        lines.extend(f"- {file_path}" for file_path in files)
+        return "\n".join(lines)
+    except Exception as exc:
+        return f"Error listing documents: {exc}"
 
 
 @mcp.tool()
-async def health_check() -> dict:
+async def health_check() -> dict[str, Any]:
     """
-    Check the health of the RAG system.
-    
+    Check health of the RAG API and scanner.
+
     Returns:
-        Health status dictionary
+        Health status dictionary.
     """
+    result: dict[str, Any] = {
+        "status": "unknown",
+        "rag_api_base_url": RAG_API_BASE_URL,
+    }
+
     try:
-        health_status = {
-            "status": "healthy",
-            "vector_store_initialized": doc_manager.vector_store is not None,
-            "documents_loaded": len(doc_manager.documents) > 0,
-            "llm_endpoint": LLM_ENDPOINT,
-            "embedding_model": EMBEDDING_MODEL
-        }
-        
-        return health_status
-    
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e)
-        }
+        result["health"] = _request_json("GET", "/health", timeout=10)
+        result["scanner"] = _request_json("GET", "/scanner/status", timeout=10)
+        api_status = result["health"].get("status", "unknown")
+        scanner_running = result["scanner"].get("scanner_running", False)
+        result["status"] = "healthy" if scanner_running and api_status in {"healthy", "degraded"} else "degraded"
+    except Exception as exc:
+        result["status"] = "unhealthy"
+        result["error"] = str(exc)
+
+    return result
 
 
 if __name__ == "__main__":
-    # Run the MCP server
     mcp.run()

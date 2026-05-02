@@ -1,231 +1,315 @@
-# rag-aiworkshop
+# CORE RAG Workbench
 
-<!-- === DYNAMIC BADGE BAR === -->
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-v0.1.0-6963ff?style=flat-square&logo=github&logoColor=white)](#release-notes) &nbsp;
-[![Release Date](https://img.shields.io/badge/release-2026--04--20-6963ff?style=flat-square)](#release-notes) &nbsp;
-[![License: MIT](https://img.shields.io/badge/License-MIT-6963ff?style=flat-square)](./LICENSE) &nbsp;
-[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-6963ff?style=flat-square)](https://www.python.org/) &nbsp;
-[![Tests: 312+](https://img.shields.io/badge/Tests-312+-6963ff?style=flat-square)](#testing)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-RAG_API-009688?style=flat-square&logo=fastapi&logoColor=white)
+![ChromaDB](https://img.shields.io/badge/Vector_Store-ChromaDB-5B5BD6?style=flat-square)
+![MCP](https://img.shields.io/badge/MCP-Pi_Ready-6963ff?style=flat-square)
+![Local First](https://img.shields.io/badge/Local--First-Yes-2ea44f?style=flat-square)
+
+**Local-first RAG workspace for Pi, CORE notes, and agent memory.**
 
 </div>
 
-<br>
-
-<!-- === CTA PANEL === -->
-<div align="center">
-
-[![Framework](https://img.shields.io/badge/Get_the_Framework-6963ff?style=for-the-badge&logo=gumroad&logoColor=white)](https://workshopai2.gumroad.com/l/ceh-framework) &nbsp;
-[![Documentation](https://img.shields.io/badge/Docs-6963ff?style=for-the-badge&logo=readthedocs&logoColor=white)](#quick-start) &nbsp;
-[![Source Code](https://img.shields.io/badge/Source-6963ff?style=for-the-badge&logo=github&logoColor=white)](#project-layout)
-
-</div>
-
-<br>
-
-<!-- === HERO SECTION === -->
-<p align="center">
-  <em>A local-first RAG system built autonomously by a multi-agent framework.</em>
-</p>
-
-<!-- === END HEADER === -->
-
 ---
 
-This repository is the reference implementation produced by the [C.E.H. multi-agent framework](https://workshopai2.gumroad.com/l/ceh-framework) — a prompt-based agent cluster (PM, Code, Scaut, Ask, Debug, Writer, Healer) that ships production-grade code with evidence-gated task execution.
+## Overview
 
-Every feature below was planned, implemented, tested, and verified by agents following a 13-section task discipline with Definition-of-Done gates. Task files and evidence bundles live in [`ai_workspace/memory/TASKS/`](./ai_workspace/memory/TASKS/) — **the real audit trail, unedited**.
+CORE RAG Workbench is a local RAG system built around a watched workspace folder, automatic file scanning, ChromaDB vector storage, and a FastAPI query endpoint. It is currently wired for the working local setup used by Pi: the scanner indexes files from a selected folder, `/rag/query` searches the same ChromaDB collection, and the CLI provides short commands for status, workspace selection, and embedding backend switching.
 
----
+The current working path is:
 
-## What's Inside
-
-
-| Feature | Description | Metrics | Docs |
-|---------|-------------|---------|------|
-| **Hybrid Search** | BM25 + dense vectors fused via Reciprocal Rank Fusion (RRF) | +18.5% accuracy vs vector-only, ~5.9ms latency | [`HYBRID_SEARCH_METRICS.md`](ai_workspace/docs/HYBRID_SEARCH_METRICS.md) |
-| **Cross-Encoder Reranker** | `cross-encoder/ms-marco-MiniLM-L-6-v2` over top-k results | Deeper semantic re-ranking | [`src/core/rerankers/cross_encoder_reranker.py`](ai_workspace/src/core/rerankers/cross_encoder_reranker.py) |
-| **Evaluation Framework** | MRR, NDCG, baseline reports with automated metrics | Measurable improvement tracking | [`src/evaluation/rag_evaluator.py`](ai_workspace/src/evaluation/rag_evaluator.py) |
-| **Agentic RAG** | Self-critique loop with query rewriting and iterative refinement | Complex query handling | [`src/agents/rag_agent.py`](ai_workspace/src/agents/rag_agent.py) |
-| **Tenant Isolation** | Per-tenant filtering, audit logging, Bearer-token auth | Multi-tenant data separation | [`src/security/`](ai_workspace/src/security/) |
-| **Multi-Modal (CLIP)** | Image encoder, unified embedding space, text-to-image cross-modal search | CLIP-vit-base-patch32 | [`src/multimodal/`](ai_workspace/src/multimodal/) |
-| **Graph RAG (Neo4j)** | Entity extraction, graph traversal, hybrid graph+vector retrieval | Relationship-heavy domains | [`GRAPH_RAG.md`](ai_workspace/docs/GRAPH_RAG.md) |
-| **MCP Server** | FastMCP for agent integration, OpenAI-compatible `/v1/chat/completions` | Any MCP-compatible client | [`src/mcp_server.py`](ai_workspace/src/mcp_server.py) |
-| **Directory Scanning** | Auto-indexing with `watchfiles`, incremental updates, state persistence | File watching, debouncing | [`DIRECTORY_SCANNING.md`](ai_workspace/docs/DIRECTORY_SCANNING.md) |
-| **Environment Variables** | All hardcoded paths replaced with `os.getenv()`, `.env.example` with 9+ params | Model switching without code changes | [`.env.example`](ai_workspace/.env.example) |
-| **Service Orchestrator** | Centralized service lifecycle management | Start/stop all services | [`src/core/service_orchestrator.py`](ai_workspace/src/core/service_orchestrator.py) |
-
----
-
-## Architecture
-
+```text
+/home/tarik/CORE
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      КЛІЄНТ (API)                           │
-│   FastAPI сервер (:8000) | MCP сервер | OpenAI-сумісні      │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────────────┐
-│                    RAG ORCHESTRATOR                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │ Hybrid       │  │ Cross-Encoder│  │ Graph RAG        │   │
-│  │ Retriever    │  │ Reranker     │  │ (Neo4j)          │   │
-│  │ (BM25+Vector)│  │              │  │                  │   │
-│  └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘   │
-└─────────┼─────────────────┼───────────────────┼─────────────┘
-          │                 │                   │
-┌─────────▼─────────────────▼───────────────────▼─────────────┐
-│                    MEMORY LAYER                             │
-│  ┌──────────────────┐  ┌─────────────────────────────────┐  │
-│  │ ChromaDB         │  │ Qdrant (опціонально)            │  │
-│  │(векторне сховище)│  │                                 │  │
-│  └──────────────────┘  └─────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-          │
-┌─────────▼────────────────────────────────────────────────────┐
-│                   EMBEDDING + LLM                            │
-│  ┌──────────────────────┐  ┌──────────────────────────────┐  │
-│  │ nomic-embed-text     │  │ Llama-3-8B / Qwen3-35B       │  │
-│  │ v1.5 (768-dim)       │  │ через llama.cpp (:8080)      │  │
-│  │ на порту :8090       │  │                              │  │
-│  └──────────────────────┘  └──────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+
+The active API query path is:
+
+```text
+POST http://localhost:8000/rag/query
 ```
 
 ---
 
-## Tech Stack
+## Current Working Architecture
 
-| Component | Technology | Details |
-|-----------|------------|---------|
-| **LLM** | Llama-3-8B-Instruct (Q4_K_M GGUF) | via `llama-cpp-python`, configurable via env vars |
-| **Embeddings** | `nomic-embed-text-v1.5` | 768-dim, multilingual-friendly |
-| **Vector Store** | ChromaDB / Qdrant | Configurable, persistent storage |
-| **Keyword Search** | BM25 (`rank-bm25`) | Exact keyword matching |
-| **Reranker** | sentence-transformers cross-encoder | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
-| **Graph DB** | Neo4j | Optional, for relationship-heavy domains |
-| **Image Encoder** | CLIP-vit-base-patch32 | Multi-modal support |
-| **API** | FastAPI | OpenAI-compatible `/v1/chat/completions` |
-| **MCP Server** | FastMCP | Agent integration |
-| **Framework** | LangChain core | Orchestration layer |
-| **Rate Limiting** | `slowapi` | Per-user configurable limits |
-| **File Watching** | `watchfiles` + `IncrementalIndexManager` | Auto-reindex on file changes |
+```text
+┌──────────────────────────────────────────────┐
+│ CLI: rag                                     │
+│ - status / start / stop                      │
+│ - workspace selection                        │
+│ - embedding backend selection                │
+└───────────────────┬──────────────────────────┘
+                    │
+┌───────────────────▼──────────────────────────┐
+│ FastAPI RAG Server :8000                     │
+│ src/api/rag_server.py                        │
+│                                              │
+│ Endpoints:                                   │
+│ - /health                                    │
+│ - /scanner/status                            │
+│ - /scanner/start                             │
+│ - /scanner/stop                              │
+│ - /rag/query                                 │
+│ - /rag/index                                 │
+└───────────────────┬──────────────────────────┘
+                    │
+┌───────────────────▼──────────────────────────┐
+│ Directory Scanner                            │
+│ src/core/directory_scanner.py                │
+│                                              │
+│ Reads config/default.yaml                    │
+│ Watches: /home/tarik/CORE                    │
+│ Extensions: .txt, .md, .json, .csv           │
+└───────────────────┬──────────────────────────┘
+                    │
+┌───────────────────▼──────────────────────────┐
+│ Incremental Index Manager                    │
+│ src/core/incremental_index_manager.py        │
+│                                              │
+│ Tracks file hashes in:                       │
+│ ai_workspace/memory/index_state.json         │
+└───────────────────┬──────────────────────────┘
+                    │
+┌───────────────────▼──────────────────────────┐
+│ ChromaDB Vector Store                        │
+│ ai_workspace/memory/chroma_db                │
+│                                              │
+│ Active collection:                           │
+│ rag_directory_scanner                        │
+└───────────────────┬──────────────────────────┘
+                    │
+┌───────────────────▼──────────────────────────┐
+│ Embeddings                                   │
+│ Default: local API                           │
+│ http://localhost:8090/v1/embeddings          │
+│                                              │
+│ Alternative: sentence_transformers           │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## What Works Now
+
+- CLI command `rag` is installed through shell function.
+- `rag -w` shows or changes the watched folder.
+- The watched folder is stored in `ai_workspace/config/default.yaml`.
+- Scanner indexes files into ChromaDB.
+- `/rag/query` searches the same ChromaDB collection used by the scanner.
+- `/rag/index` writes into the same ChromaDB backend.
+- Qdrant is no longer required for the normal scanner → query flow.
+- Pi MCP can run the local RAG MCP server from `ai_workspace/src/mcp_server.py`.
+
+---
+
+## Repository Layout
+
+```text
+rag-project/
+├── README.md
+├── ai_workspace/
+│   ├── config/
+│   │   ├── default.yaml              # Main working config: watched folder, scanner, retrieval
+│   │   ├── embedding_config.yaml     # Embedding server settings
+│   │   ├── models.yaml               # Model path aliases
+│   │   ├── rag_server.yaml           # Legacy / extended RAG server settings
+│   │   ├── services.yaml             # Service orchestration config
+│   │   └── memory_persistence.yaml   # Session persistence config
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── rag_server.py         # FastAPI server and /rag/query
+│   │   │   └── scanner_manager.py    # Scanner lifecycle endpoints
+│   │   ├── core/
+│   │   │   ├── directory_scanner.py
+│   │   │   ├── incremental_index_manager.py
+│   │   │   ├── memory_manager.py
+│   │   │   ├── service_orchestrator.py
+│   │   │   ├── retrievers/
+│   │   │   └── rerankers/
+│   │   ├── agents/
+│   │   ├── evaluation/
+│   │   ├── graph/
+│   │   ├── multimodal/
+│   │   ├── security/
+│   │   ├── shared_rag/
+│   │   └── mcp_server.py             # FastMCP server for Pi/MCP clients
+│   ├── scripts/
+│   │   ├── rag_cli.py                # Main CLI implementation
+│   │   ├── install_rag_cli.sh        # Shell installer for rag function
+│   │   ├── core_start.sh
+│   │   ├── core_stop.sh
+│   │   └── start_rag_server.py
+│   ├── memory/
+│   │   ├── chroma_db/                # ChromaDB persistent store
+│   │   └── index_state.json          # Scanner hash state
+│   ├── docs/
+│   ├── tests/
+│   └── .env
+└── venv/
+```
+
+---
+
+## CLI Commands
+
+Use `rag -h` to print the current command list.
+
+```bash
+rag -h
+```
+
+Current commands:
+
+```bash
+rag status
+rag test
+rag config
+rag start
+rag stop
+rag -w
+rag -w /path/to/folder
+rag -l
+rag -st
+```
+
+### Command Reference
+
+| Command | Purpose |
+|---|---|
+| `rag -h` | Show CLI help and command list |
+| `rag status` | Check embedding server, LLM server, and Qdrant status |
+| `rag test` | Test embedding generation |
+| `rag config` | Show selected RAG configuration details |
+| `rag start` | Start FastAPI RAG server on port `8000` |
+| `rag stop` | Stop the RAG server process |
+| `rag -w` | Show current watched workspace folder |
+| `rag -w /path/to/folder` | Set watched workspace folder in `config/default.yaml` |
+| `rag -l` | Set `EMBEDDING_SOURCE=local_api` |
+| `rag -st` | Set `EMBEDDING_SOURCE=sentence_transformers` |
 
 ---
 
 ## Quick Start
 
-### 1. Install CLI
+### 1. Install the CLI function
 
 ```bash
-cd ai_workspace/scripts
+cd /home/tarik/Sandbox/my-plugin/rag-project/ai_workspace/scripts
 ./install_rag_cli.sh install
-source ~/.zshrc  # або source ~/.bashrc для bash
+source ~/.zshrc
 ```
 
-### 2. Check Status
+The installer adds this shell function:
 
 ```bash
-rag status
+export RAG_ROOT="/home/tarik/Sandbox/my-plugin/rag-project/ai_workspace"
+
+rag() {
+    cd "$RAG_ROOT" && python scripts/rag_cli.py "${@:-status}"
+}
 ```
 
-**Результат:**
-```
-RAG System Status
-========================================
-[i] Checking embedding server on port 8090...
-[✓] Running: nomic-embed-text-v1.5.Q4_K_M.gguf
-  Dimension: 768
-  Size: 79.5 MB
-
-[i] Checking LLM server on port 8080...
-[✓] Running: Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf
-  Vocabulary: 248320
-  Context: 262144
-  Size: 20.81 GB
-
-[i] Checking Qdrant on port 6333...
-[✗] Qdrant not running on port 6333
-```
-
-### 3. CLI Команди
+### 2. Check the watched folder
 
 ```bash
-rag status      # Статус всіх серверів
-rag test       # Тест генерації ембедінгів
-rag config     # Показати конфігурацію
-rag set local  # Змінити джерело embeddings (local / sentence_transformers)
-
-rag-start     # Запустити RAG сервер на порту 8000
+rag -w
 ```
 
-### 4. Без інсталяції (з будь-якої папки)
+Expected current value:
+
+```text
+/home/tarik/CORE
+```
+
+### 3. Change the watched folder
 
 ```bash
-export RAG_ROOT=/home/tarik/Sandbox/my-plugin/rag-project/ai_workspace
-python $RAG_ROOT/scripts/rag_cli.py status
-python $RAG_ROOT/scripts/rag_cli.py test
+rag -w /home/tarik/CORE
 ```
 
----
+This updates:
 
-## Конфігурація
+```text
+/home/tarik/Sandbox/my-plugin/rag-project/ai_workspace/config/default.yaml
+```
 
-### Зміна джерела Embeddings
+under:
 
-**Локальний API (default):**
+```yaml
+directory_scanning:
+  watched_directories:
+    - path: "/home/tarik/CORE"
+      recursive: true
+```
+
+### 4. Start or restart the API
+
 ```bash
-rag set local
-# Використовує порт 8090 (nomic-embed-text-v1.5)
+rag stop
+rag start
 ```
 
-**Sentence-Transformers (HF):**
+The server starts at:
+
+```text
+http://localhost:8000
+```
+
+### 5. Check scanner status
+
 ```bash
-rag set sentence_transformers
-# Використовує SentenceTransformer з HuggingFace
+curl -s http://localhost:8000/scanner/status | python3 -m json.tool
 ```
 
-### Environment Variables
+Expected shape:
 
-Основні змінні в `.env`:
+```json
+{
+  "scanner_running": true,
+  "scanner_enabled": true,
+  "watched_directories": 1
+}
+```
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `EMBEDDING_SOURCE` | `local_api` | Джерело embeddings (`local_api` або `sentence_transformers`) |
-| `LLM_ENDPOINT` | `http://localhost:8080/v1/chat/completions` | LLM server |
-| `EMBEDDING_ENDPOINT` | `http://localhost:8090/v1/embeddings` | Embedding server |
-| `RAG_SERVER_PORT` | `8000` | RAG API порт |
+### 6. Query the RAG API
+
+```bash
+curl -s -X POST http://localhost:8000/rag/query \
+  -H "Content-Type: application/json" \
+  -d '{"query":"checkin progress goals CORE","top_k":10}' \
+  | python3 -m json.tool
+```
+
+Successful response includes non-empty `sources`, for example:
+
+```json
+{
+  "sources": [
+    {
+      "source": "/home/tarik/CORE/goals.md",
+      "filename": "goals.md"
+    }
+  ]
+}
+```
 
 ---
 
 ## Configuration
 
-### Configuration Files
+### Main Config
 
-| File | Purpose |
-|------|---------|
-| [`config/default.yaml`](ai_workspace/config/default.yaml) | LLM endpoint, chunk_size, top_k, directory scanning |
-| [`config/embedding_config.yaml`](ai_workspace/config/embedding_config.yaml) | **Embedding model settings (порт 8090)** |
-| [`config/models.yaml`](ai_workspace/config/models.yaml) | Model configurations |
-| [`config/rag_server.yaml`](ai_workspace/config/rag_server.yaml) | RAG server settings |
-| [`config/services.yaml`](ai_workspace/config/services.yaml) | Service definitions |
-| [`config/memory_persistence.yaml`](ai_workspace/config/memory_persistence.yaml) | Memory persistence settings |
+```text
+ai_workspace/config/default.yaml
+```
 
-### Embedding Configuration (`embedding_config.yaml`)
+Important fields:
 
 ```yaml
-model:
-  model_path: "./models/embeddings/nomic-embed-text-v1.5.Q4_K_M.gguf"
-  model_name: "nomic-embed-text-v1.5"
-  port: 8090
-  endpoint: "http://localhost:{{port}}/v1/embeddings"
-  timeout: 15
-
-server:
-  host: "127.0.0.1"
-  port: 8090
-  max_workers: 4
+llm:
+  endpoint: "http://localhost:8080/v1/chat/completions"
 
 retrieval:
   top_k: 5
@@ -233,215 +317,295 @@ retrieval:
   rerank: true
   chunk_size: 512
   chunk_overlap: 50
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+
+directory_scanning:
+  enabled: true
+  watched_directories:
+    - path: "/home/tarik/CORE"
+      recursive: true
+  allowed_extensions:
+    - ".txt"
+    - ".md"
+    - ".json"
+    - ".csv"
 ```
 
-### Environment Variables (.env)
+### Embedding Config
+
+```text
+ai_workspace/config/embedding_config.yaml
+```
+
+Default local endpoint:
+
+```text
+http://localhost:8090/v1/embeddings
+```
+
+Switch backend:
 
 ```bash
-# LLM Configuration
-LLM_MODEL_PATH=models/llm/default.gguf
-LLM_MODEL_NAME=Llama-3-8B-Instruct
-LLM_ENDPOINT=http://localhost:8080/v1/chat/completions
+rag -l   # local_api
+rag -st  # sentence_transformers
+```
 
-# Embedding Configuration  
-EMBEDDING_MODEL_PATH=./models/embeddings/nomic-embed-text-v1.5.Q4_K_M.gguf
-EMBEDDING_MODEL_NAME=nomic-ai/nomic-embed-text-v1.5
-EMBEDDING_ENDPOINT=http://localhost:8090/v1/embeddings
-EMBEDDING_PORT=8090
+This edits `.env`:
 
-# EMBEDDING_SOURCE: local_api (default) або sentence_transformers
+```text
 EMBEDDING_SOURCE=local_api
 ```
 
----
+or:
 
-## Features Deep-Dive
-
-| Feature | Documentation |
-|---------|---------------|
-| **Hybrid Search** | [`ai_workspace/docs/HYBRID_SEARCH_METRICS.md`](ai_workspace/docs/HYBRID_SEARCH_METRICS.md) |
-| **Graph RAG** | [`ai_workspace/docs/GRAPH_RAG.md`](ai_workspace/docs/GRAPH_RAG.md) |
-| **Client Integration** | [`ai_workspace/docs/CLIENT_INTEGRATION_GUIDE.md`](ai_workspace/docs/CLIENT_INTEGRATION_GUIDE.md) |
-| **Directory Scanning** | [`ai_workspace/docs/DIRECTORY_SCANNING.md`](ai_workspace/docs/DIRECTORY_SCANNING.md) |
-| **System Overview** | [`ai_workspace/docs/UKRAINIAN_OVERVIEW.md`](ai_workspace/docs/UKRAINIAN_OVERVIEW.md) |
+```text
+EMBEDDING_SOURCE=sentence_transformers
+```
 
 ---
 
-## API Usage
+## API Endpoints
 
-### Query the RAG System
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/health` | System health |
+| `GET` | `/health/verbose` | Detailed health |
+| `GET` | `/scanner/status` | Scanner status |
+| `POST` | `/scanner/start` | Start scanner |
+| `POST` | `/scanner/stop` | Stop scanner |
+| `POST` | `/rag/query` | Search indexed files and generate answer |
+| `POST` | `/rag/index` | Add a document directly into ChromaDB |
+| `POST` | `/v1/chat/completions` | OpenAI-compatible chat endpoint |
+| `POST` | `/v1/embeddings` | OpenAI-compatible embeddings endpoint |
+
+---
+
+## RAG Query Flow
+
+Current `/rag/query` behavior:
+
+1. Receives query JSON.
+2. Generates query embedding through the configured embedding backend.
+3. Opens ChromaDB persistent store:
+
+   ```text
+   ./ai_workspace/memory/chroma_db
+   ```
+
+4. Searches collection:
+
+   ```text
+   rag_directory_scanner
+   ```
+
+5. Builds context from returned documents.
+6. Uses LLM if available; otherwise returns a fallback answer with retrieved context.
+7. Returns `answer`, `sources`, and `metadata`.
+
+Example request:
 
 ```bash
-curl -X POST http://localhost:8000/v1/chat/completions \
+curl -s -X POST http://localhost:8000/rag/query \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "shared-rag-v1",
-    "messages": [{"role": "user", "content": "What is quantum computing?"}]
+    "query": "What are my current CORE goals?",
+    "top_k": 5
   }'
 ```
 
-### Add a Document
+---
+
+## Direct Indexing
+
+You can add a document directly without placing it in the watched folder:
 
 ```bash
-curl -X POST http://localhost:8000/documents \
+curl -s -X POST http://localhost:8000/rag/index \
   -H "Content-Type: application/json" \
   -d '{
-    "id": "doc_001",
-    "text": "Document content here...",
-    "metadata": {"source": "my_file.txt", "category": "docs"}
+    "id": "manual-doc-001",
+    "text": "This is a manual document for CORE RAG.",
+    "metadata": {
+      "source": "manual",
+      "tag": "test"
+    }
   }'
 ```
 
-**Full client SDK examples:** [`ai_workspace/docs/CLIENT_INTEGRATION_GUIDE.md`](ai_workspace/docs/CLIENT_INTEGRATION_GUIDE.md).
+This writes into the same ChromaDB collection used by the scanner.
+
+---
+
+## Scanner Behavior
+
+The scanner watches files with these extensions:
+
+```text
+.txt
+.md
+.json
+.csv
+```
+
+It tracks indexed files by SHA256 hash in:
+
+```text
+ai_workspace/memory/index_state.json
+```
+
+To force a fresh scan after changing the workspace:
+
+```bash
+curl -s -X POST http://localhost:8000/scanner/stop | python3 -m json.tool
+curl -s -X POST http://localhost:8000/scanner/start | python3 -m json.tool
+```
+
+If the API server was already running before a config change, restart it:
+
+```bash
+rag stop
+rag start
+```
+
+---
+
+## MCP / Pi Integration
+
+Pi uses the RAG MCP server from:
+
+```text
+/home/tarik/Sandbox/my-plugin/rag-project/ai_workspace/src/mcp_server.py
+```
+
+The MCP server is intentionally a thin adapter over the FastAPI RAG API. It does not maintain a separate ChromaDB index or document list.
+
+Current flow:
+
+```text
+Pi MCP tool → src/mcp_server.py → http://localhost:8000/rag/query → ChromaDB rag_directory_scanner
+```
+
+Typical Pi MCP server config points to:
+
+```json
+{
+  "command": "/home/tarik/Sandbox/my-plugin/rag-project/venv/bin/python",
+  "args": ["src/mcp_server.py"],
+  "cwd": "/home/tarik/Sandbox/my-plugin/rag-project/ai_workspace",
+  "env": {
+    "PYTHONPATH": ".",
+    "PYTHONIOENCODING": "utf-8",
+    "RAG_API_BASE_URL": "http://localhost:8000"
+  }
+}
+```
+
+Available MCP tools from the RAG adapter:
+
+```text
+search          → POST /rag/query
+ask             → POST /rag/query
+add_document    → POST /rag/index
+list_documents  → scanner index_state.json
+health_check    → GET /health + GET /scanner/status
+```
+
+After editing MCP server code, reload Pi or reconnect the MCP server so direct tools use the new process.
 
 ---
 
 ## Testing
 
+Run tests from `ai_workspace`:
+
 ```bash
-# Unit tests (excludes integration tests marked with @pytest.mark.integration)
-cd ai_workspace
+cd /home/tarik/Sandbox/my-plugin/rag-project/ai_workspace
 .venv/bin/python -m pytest tests/
+```
 
-# Integration tests (require running llama.cpp + API services)
-.venv/bin/python -m pytest tests/ -m integration
+Run selected tests:
 
-# Specific test suites
+```bash
+.venv/bin/python -m pytest tests/test_scanner_integration.py -v
+.venv/bin/python -m pytest tests/test_memory_persistence.py -v
 .venv/bin/python -m pytest tests/test_hybrid_retriever.py -v
-.venv/bin/python -m pytest tests/test_graph_retriever.py -v
-.venv/bin/python -m pytest tests/test_multimodal_image_encoder.py -v
 ```
 
-**Current state (2026-04-20):** 312 passed · 8 failing · 8 deselected (integration). TASK-029 integration tests: 24/24 passing.
-
-The 8 remaining unit-test failures are tracked as [TASK-017, TASK-018](./ai_workspace/memory/TASKS/) and are being resolved by the C.E.H. agent cluster itself — see the task board for live status. Integration tests are separated via `@pytest.mark.integration` and excluded from default runs via [`ai_workspace/pytest.ini`](./ai_workspace/pytest.ini).
+Some tests may require optional services or models. Treat integration tests separately from quick unit checks.
 
 ---
 
-## Project Layout
+## Operational Notes
 
-```
-rag-workshop/
-├── ai_workspace/
-│   ├── src/
-│   │   ├── api/              # FastAPI RAG server
-│   │   │   └── rag_server.py # Main RAG API endpoint
-│   │   ├── agents/           # Agentic RAG components
-│   │   │   ├── rag_agent.py  # RAG Agent with reflection
-│   │   │   ├── planner.py    # Query planner
-│   │   │   └── tools.py      # Tool registry
-│   │   ├── core/             # System core
-│   │   │   ├── memory_manager.py     # Memory management
-│   │   │   ├── service_orchestrator.py # Service lifecycle
-│   │   │   ├── directory_scanner.py  # File watching
-│   │   │   ├── incremental_index_manager.py # Auto-indexing
-│   │   │   ├── retrievers/           # Retrieval modules
-│   │   │   │   ├── hybrid_retriever.py
-│   │   │   │   ├── hybrid_retriever_with_rerank.py
-│   │   │   │   └── bm25_retriever.py
-│   │   │   └── rerankers/            # Re-ranking modules
-│   │   │       └── cross_encoder_reranker.py
-│   │   ├── evaluation/       # MRR / NDCG evaluation framework
-│   │   │   ├── rag_evaluator.py
-│   │   │   └── dashboard.py
-│   │   ├── graph/            # Graph RAG (Neo4j)
-│   │   │   ├── entity_extractor.py
-│   │   │   ├── graph_retriever.py
-│   │   │   └── hybrid_graph_retriever.py
-│   │   ├── multimodal/       # CLIP image pipeline
-│   │   │   ├── image_encoder.py
-│   │   │   ├── image_preprocessor.py
-│   │   │   ├── multimodal_llm.py
-│   │   │   └── unified_retriever.py
-│   │   ├── security/         # Tenant isolation + audit
-│   │   │   ├── tenant_api.py
-│   │   │   ├── tenant_context.py
-│   │   │   └── row_level_security.py
-│   │   ├── shared_rag/       # Client SDKs and plugins
-│   │   │   ├── client.py
-│   │   │   ├── js_client.js
-│   │   │   └── lm_studio_plugin.py
-│   │   └── mcp_server.py     # MCP server
-│   ├── tests/                # ~320 tests, ~97% passing
-│   ├── config/               # YAML configs
-│   │   ├── default.yaml
-│   │   ├── embedding_config.yaml
-│   │   ├── models.yaml
-│   │   ├── rag_server.yaml
-│   │   ├── services.yaml
-│   │   └── memory_persistence.yaml
-│   ├── docs/                 # Feature deep-dives
-│   ├── evaluation_results/   # Baseline metrics (evidence)
-│   ├── memory/               # ChromaDB storage + task files
-│   │   └── TASKS/            # Every task that built this repo
-│   ├── scripts/              # Utility scripts
-│   ├── .env.example          # Environment variable template
-│   ├── pytest.ini            # Test configuration
-│   └── PROJECT_STATE.md      # PM-owned state file
-├── README.md                 # this file
-└── LICENSE                   # MIT
-```
+- Normal RAG API search no longer depends on Qdrant.
+- Qdrant-related code remains in the project as legacy/optional infrastructure.
+- The active vector store for scanned files is ChromaDB.
+- If `sources` is empty after changing workspace:
+  1. Check `rag -w`.
+  2. Confirm files exist and have supported extensions.
+  3. Restart API: `rag stop && rag start`.
+  4. Check scanner status.
+  5. Inspect `ai_workspace/memory/index_state.json`.
+- If using `sentence_transformers`, GPU memory may be required. The local API backend is the safer default.
 
 ---
 
-## How This Was Built
+## Troubleshooting
 
-Each feature corresponds to a numbered task implemented by the C.E.H. agent cluster:
+### `rag -w /path` changes config but query returns old files
 
-| Task | What | Status |
-|------|------|--------|
-| TASK-001 | RAG project initialization with llama.cpp | DONE |
-| TASK-002 | Project refactor to modern RAG MCP stack | DONE |
-| TASK-003 | Embedding model configuration | DONE |
-| TASK-004 | Rebuild shared memory system | DONE |
-| TASK-005 | Integrate and test new architecture | DONE |
-| TASK-006 | Market and competitor analysis for RAG systems | DONE |
-| TASK-007 | Hybrid Search (BM25 + vectors, RRF fusion) | DONE |
-| TASK-008 | Cross-Encoder Reranker | DONE |
-| TASK-009 | Evaluation Framework (MRR/NDCG) | DONE |
-| TASK-010 | Agentic RAG patterns | DONE |
-| TASK-011 | Tenant Isolation + audit logging | DONE |
-| TASK-012 | Multi-Modal (CLIP) | DONE |
-| TASK-013 | Graph RAG (Neo4j) | DONE |
-| TASK-019 | Mark llama.cpp-dependent tests as `integration` | DONE |
-| TASK-020 | Restore `use_memory_fallback` semantics; fix crash test | DONE |
-| TASK-021 | Fix import path in test_security_integration.py | DONE |
-| TASK-022 | Add PyJWT>=2.0.0 to requirements_mcp.txt | DONE |
-| TASK-023 | Replace hardcoded model paths with environment variables | DONE |
-| TASK-024 | Fix integration tests (7 passed, 1 skipped, 0 failed) | DONE |
-| TASK-025 | Directory Scanning & Incremental Indexing | PENDING |
+Restart the API server so it reloads `config/default.yaml`:
 
-## Recent Changes
+```bash
+rag stop
+rag start
+```
 
-- **v0.1.0 Stable (2026-04-20)** — **Production Hardening Release.** First stable release marking completion of a 14-task hardening cycle (TASK-027 through TASK-040). Key changes:
-  - **Security:** Removed hardcoded Neo4j password (TASK-035); replaced open CORS `allow_origins=["*"]` with env-driven whitelist (TASK-036); narrowed 14 bare `except Exception` blocks to specific types (TASK-039).
-  - **Performance:** Replaced sync `requests` with `httpx.AsyncClient` in health checks; wrapped Qdrant `upsert()` in `asyncio.to_thread` (TASK-038).
-  - **Test Infrastructure:** Fixed 5 missing dependencies; removed 18 `sys.path.insert` calls; 401/409 tests collected, 0 errors (TASK-037).
-  - **Dead Code Removal:** Removed `ContextMemory` and `SessionMemory` subsystems (747 → 382 LOC in `memory_manager.py`) (TASK-040).
-  - **Reliability:** Fixed MemoryPersistence data loss with atomic writes + `fsync()` (TASK-027); added API rate limiting (TASK-028); integrated directory scanner with FastAPI lifecycle (TASK-029); added comprehensive health check endpoints (TASK-030).
-  - **Documentation:** Professional README header with dynamic badges, CTA, hero section (TASK-034).
-  - Full release notes: [`ai_workspace/docs/RELEASE_NOTES_v0.1.0.md`](ai_workspace/docs/RELEASE_NOTES_v0.1.0.md)
+### Scanner shows running but no files indexed
 
-- **v2026.04.20** — **Breaking:** Removed unused `ContextMemory` and `SessionMemory` subsystems from [`memory_manager.py`](ai_workspace/src/core/memory_manager.py) (dead code with misleading docstrings). `MemoryConfig.embedding_model` default aligned to `nomic-ai/nomic-embed-text-v1.5` via `EMBEDDING_MODEL_NAME` env var. If you depended on them, pin to the previous release; a real implementation will be written when requirements are concrete.
+Check supported files:
 
-Every feature, fix, and integration above was executed **fully autonomously** by a multi-agent cluster (PM, Code, Debug, Writer, Scaut, Ask, Healer) running on **local Qwen LLMs** — from **Qwen 35B** to **Qwen 80B MoE**, entirely on-device, no external API calls.
+```bash
+find "$(python scripts/rag_cli.py -w 2>/dev/null)" -type f \
+  \( -name '*.txt' -o -name '*.md' -o -name '*.json' -o -name '*.csv' \)
+```
 
-Each task file in [`ai_workspace/memory/TASKS/`](./ai_workspace/memory/TASKS/) contains the objective, DoD checklist, test evidence, and change log — the real audit trail, unedited. This is what "evidence-gated autonomous development" looks like in practice: nothing hidden, nothing polished post-hoc. Just code, tests, and proof.
+Or inspect state:
 
----
+```bash
+python3 -m json.tool ai_workspace/memory/index_state.json
+```
 
-## Get the Framework
+### `/rag/query` returns `sources: []`
 
-This repo proves the framework works. If you want the framework itself — the 7 agents, templates, system registry, and custom modes — it's available as a prompt pack:
+Check whether ChromaDB has indexed documents and whether the embedding server is running:
 
-**[C.E.H. Multi-Agent Framework on Gumroad](https://workshopai2.gumroad.com/l/ceh-framework)**
+```bash
+rag status
+curl -s http://localhost:8000/scanner/status | python3 -m json.tool
+```
+
+### `rag` function does not pass arguments
+
+Make sure shell function uses `"${@:-status}"`, not only `$1`:
+
+```bash
+rag() {
+    cd "$RAG_ROOT" && python scripts/rag_cli.py "${@:-status}"
+}
+```
+
+Then reload shell:
+
+```bash
+source ~/.zshrc
+```
 
 ---
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
----
-
-*Built with [C.E.H.](https://workshopai2.gumroad.com/l/ceh-framework) — the multi-agent framework that ships code with evidence.*

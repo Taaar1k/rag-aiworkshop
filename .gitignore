@@ -60,6 +60,20 @@ credentials.json
 # Personal notes (not shipped)
 claude_translation.txt
 MEMORY.md
+CLAUDE.md
 ai_workspace/qdrant_storage/
 SPEC-2026-04-20-PRODUCTION-HARDENING.md
 SPEC-2026-04-20-FIX-MEMORY-LAYER.md
+
+# Nested repos (do not commit as gitlinks)
+/rag-aiworkshop/
+
+# Internal PM/eval artifacts (not part of the product)
+ai_workspace/memory/TASKS/
+ai_workspace/memory/TASK_BOARD.md
+ai_workspace/memory/DEBUG_REPORT.md
+ai_workspace/memory/EVIDENCE_STANDARD.md
+ai_workspace/memory/EXECUTION_MODE_POLICY.md
+ai_workspace/memory/PROJECT.md
+ai_workspace/memory/PROJECT_STATE.md
+ai_workspace/evaluation_results/

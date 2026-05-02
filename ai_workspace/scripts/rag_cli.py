@@ -25,9 +25,10 @@ def get_rag_root() -> Path:
     
     if (rag_path / "src").exists():
         return rag_path
-    
-    # Default fallback
-    return Path("/home/tarik/Sandbox/my-plugin/rag-project/ai_workspace")
+
+    raise RuntimeError(
+        "Cannot locate RAG root. Set RAG_ROOT env var or run from ai_workspace/."
+    )
 
 
 GREEN = "\033[92m"
@@ -197,6 +198,68 @@ def show_config() -> None:
                 print(config_file.read_text()[:500])
 
 
+def set_workspace(folder_parts: Optional[list[str]] = None) -> None:
+    """Show or set the watched workspace folder for directory scanning."""
+    folder = " ".join(folder_parts) if folder_parts else None
+    rag_root = get_rag_root()
+    config_path = rag_root / "config" / "default.yaml"
+
+    if folder is None or folder == "show":
+        content = config_path.read_text()
+        for line in content.split("\n"):
+            if 'path:' in line and 'watched' not in line:
+                current = line.split('"')[1] if '"' in line else None
+                if current:
+                    ok(f"Current workspace: {current}")
+                    return
+        err("No workspace configured")
+        return
+
+    folder_path = Path(folder).resolve()
+
+    if not folder_path.exists():
+        err(f"Folder not found: {folder}")
+        return
+
+    if not folder_path.is_dir():
+        err(f"Not a directory: {folder}")
+        return
+
+    content = config_path.read_text()
+
+    # Find watched_directories and replace the path
+    lines = content.split("\n")
+    new_lines = []
+    in_watched = False
+    path_replaced = False
+
+    for line in lines:
+        if "watched_directories:" in line:
+            in_watched = True
+            new_lines.append(line)
+        elif in_watched and "- path:" in line:
+            new_lines.append(f'    - path: "{folder_path}"')
+            path_replaced = True
+            in_watched = False
+        else:
+            new_lines.append(line)
+
+    if not path_replaced:
+        # Insert after watched_directories if not found
+        new_lines = []
+        for line in lines:
+            new_lines.append(line)
+            if "watched_directories:" in line:
+                new_lines.append(f'    - path: "{folder_path}"')
+                new_lines.append('      recursive: true')
+                path_replaced = True
+
+    new_content = "\n".join(new_lines)
+    config_path.write_text(new_content)
+    ok(f"Set workspace: {folder_path}")
+    info("Restart scanner or reindex for changes")
+
+
 def status() -> None:
     """Show system status."""
     print(f"\n{BOLD}RAG System Status{RESET}")
@@ -210,20 +273,243 @@ def status() -> None:
     print()
 
 
+DOCTOR_CHECKS_PASS: int = 0
+DOCTOR_CHECKS_FAIL: int = 0
+DOCTOR_CHECKS_WARN: int = 0
+
+def _check(ok_msg: str, fail_msg: str, condition: bool) -> bool:
+    """Track pass/fail for doctor command and print result."""
+    global DOCTOR_CHECKS_PASS, DOCTOR_CHECKS_FAIL, DOCTOR_CHECKS_WARN
+    if condition:
+        DOCTOR_CHECKS_PASS += 1
+        return True
+    DOCTOR_CHECKS_FAIL += 1
+    return False
+
+
+def doctor() -> None:
+    """Run smoke-test to verify the RAG system is healthy."""
+    global DOCTOR_CHECKS_PASS, DOCTOR_CHECKS_FAIL, DOCTOR_CHECKS_WARN
+    DOCTOR_CHECKS_PASS = DOCTOR_CHECKS_FAIL = DOCTOR_CHECKS_WARN = 0
+
+    print(f"\n{BOLD}CORE RAG Doctor — Smoke Test{RESET}")
+    print("=" * 50 + "\n")
+
+    rag_root = get_rag_root()
+
+    # ── 1. Workspace ──
+    print(f"{BOLD}[1/8] Workspace{RESET}")
+    info(f"RAG root: {rag_root}")
+    if _check("RAG root exists", "RAG root MISSING", rag_root.exists()):
+        default_yaml = rag_root / "config" / "default.yaml"
+        if default_yaml.exists():
+            import yaml
+            cfg = yaml.safe_load(default_yaml.read_text())
+            watched = cfg.get("directory_scanning", {}).get("watched_directories", [])
+            if watched:
+                for entry in watched:
+                    p = Path(entry["path"])
+                    ok(f"Watched dir: {p}  {'✓ exists' if p.exists() else '✗ MISSING'}")
+                    if not p.exists():
+                        err(f"Watched directory not found: {p}")
+                        DOCTOR_CHECKS_FAIL += 1
+                    else:
+                        files = list(p.rglob("*"))
+                        print(f"    Files inside: {len(files)}")
+            else:
+                warn("No watched directories configured")
+                DOCTOR_CHECKS_WARN += 1
+        else:
+            warn("config/default.yaml not found")
+            DOCTOR_CHECKS_WARN += 1
+    print()
+
+    # ── 2. Scanner state ──
+    print(f"{BOLD}[2/8] Scanner index state{RESET}")
+    state_file = rag_root / "memory" / "index_state.json"
+    if not state_file.exists():
+        state_file = rag_root.parent / "ai_workspace" / "memory" / "index_state.json"
+    if state_file.exists():
+        import json
+        state = json.loads(state_file.read_text())
+        files = sorted(state.get("files", {}).keys())
+        last_scan = state.get("last_scan", "unknown")
+        schema = state.get("schema_version", "unknown")
+        ok(f"State file: {state_file}")
+        print(f"    Tracked files: {len(files)}")
+        print(f"    Last scan:     {last_scan}")
+        print(f"    Schema:        {schema}")
+        if files:
+            for f in files[:5]:
+                print(f"      • {f}")
+            if len(files) > 5:
+                print(f"      … and {len(files)-5} more")
+    else:
+        warn("Scanner state file not found")
+        warn("Start the RAG API/scanner first")
+        DOCTOR_CHECKS_WARN += 1
+    print()
+
+    # ── 3. RAG API health ──
+    print(f"{BOLD}[3/8] RAG API /health{RESET}")
+    try:
+        with httpx.Client(timeout=5) as client:
+            r = client.get("http://localhost:8000/health")
+            if r.status_code == 200:
+                data = r.json()
+                status = data.get("status", "unknown")
+                components = data.get("components", {})
+                if _check(f"HTTP 200 | status={status}", "Unhealthy", status in {"healthy", "degraded"}):
+                    for name, comp in components.items():
+                        cs = comp.get("status", "?")
+                        icon = "✓" if cs == "healthy" else ("!" if cs == "degraded" else "✗")
+                        print(f"    [{icon}] {name}: {cs}  {comp.get('message', '')[:80]}")
+            else:
+                _check("", f"HTTP {r.status_code}", False)
+                err(f"Health endpoint returned {r.status_code}")
+    except Exception as e:
+        _check("", f"Cannot reach RAG API: {e}", False)
+        err(f"Cannot reach RAG API on localhost:8000")
+        err("  Start server: rag start")
+    print()
+
+    # ── 4. Scanner running ──
+    print(f"{BOLD}[4/8] Scanner{RESET}")
+    try:
+        with httpx.Client(timeout=5) as client:
+            r = client.get("http://localhost:8000/scanner/status")
+            if r.status_code == 200:
+                data = r.json()
+                running = data.get("scanner_running", False)
+                enabled = data.get("scanner_enabled", False)
+                dirs = data.get("watched_directories", 0)
+                if _check(f"Scanner {'RUNNING' if running else 'IDLE'}", "Scanner NOT running", running):
+                    print(f"    Enabled: {enabled}")
+                    print(f"    Watched dirs: {dirs}")
+            else:
+                warn("Scanner status endpoint unreachable")
+                DOCTOR_CHECKS_WARN += 1
+    except Exception as e:
+        _check("", f"Scanner status failed: {e}", False)
+        err(f"Cannot reach scanner status endpoint")
+    print()
+
+    # ── 5. RAG query ──
+    print(f"{BOLD}[5/8] RAG query{RESET}")
+    try:
+        with httpx.Client(timeout=15) as client:
+            r = client.post(
+                "http://localhost:8000/rag/query",
+                json={"query": "ping health check", "top_k": 2},
+            )
+            if r.status_code == 200:
+                data = r.json()
+                sources = data.get("sources", [])
+                answer = data.get("answer", "")
+                if _check(f"Query OK: {len(sources)} sources, {len(answer)} chars answer", "No sources returned", len(sources) > 0):
+                    for s in sources[:3]:
+                        print(f"    • {s.get('filename', '?')}  (score: {s.get('score', 'n/a')})")
+            else:
+                _check("", f"Query HTTP {r.status_code}", False)
+    except Exception as e:
+        _check("", f"Query failed: {e}", False)
+        err(f"Query to RAG API failed")
+    print()
+
+    # ── 6. Env vars ──
+    print(f"{BOLD}[6/8] Environment variables{RESET}")
+    gh_token = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN", "")
+    brave_key = os.environ.get("BRAVE_API_KEY", "")
+    groq_key = os.environ.get("GROQ_API_KEY", "")
+    if gh_token:
+        ok(f"GITHUB_PERSONAL_ACCESS_TOKEN: set ({len(gh_token)} chars)")
+        DOCTOR_CHECKS_PASS += 1
+    else:
+        warn("GITHUB_PERSONAL_ACCESS_TOKEN NOT set (needed for GitHub MCP)")
+        DOCTOR_CHECKS_WARN += 1
+    if brave_key:
+        ok(f"BRAVE_API_KEY: set ({len(brave_key)} chars)")
+        DOCTOR_CHECKS_PASS += 1
+    else:
+        warn("BRAVE_API_KEY NOT set (needed for Brave Search MCP)")
+        DOCTOR_CHECKS_WARN += 1
+    if groq_key:
+        ok(f"GROQ_API_KEY: set ({len(groq_key)} chars)")
+        DOCTOR_CHECKS_PASS += 1
+    else:
+        warn("GROQ_API_KEY NOT set (needed for Telegram voice transcription)")
+        DOCTOR_CHECKS_WARN += 1
+    print()
+
+    # ── 7. MCP config integrity ──
+    print(f"{BOLD}[7/8] Pi MCP config integrity{RESET}")
+    mcp_path = Path.home() / ".pi" / "agent" / "mcp.json"
+    if mcp_path.exists():
+        import json
+        mcp_data = json.loads(mcp_path.read_text())
+        servers = mcp_data.get("mcpServers", {})
+        ok(f"MCP config: {len(servers)} servers")
+        for name in sorted(servers):
+            cfg = servers[name]
+            env = cfg.get("env", {})
+            has_token_ref = any(
+                "${GITHUB" in v or "${BRAVE" in v or "${GROQ" in v
+                for v in env.values()
+            )
+            has_hardcoded = any(
+                v.startswith(("gho_", "BSA", "sk-"))
+                for v in env.values()
+            )
+            extra = ""
+            if has_hardcoded:
+                extra = " ⚠️ HARDCODED TOKEN"
+                DOCTOR_CHECKS_WARN += 1
+            elif has_token_ref:
+                extra = " (env var refs)"
+            print(f"    • {name}{extra}")
+    else:
+        warn("Pi MCP config not found")
+        DOCTOR_CHECKS_WARN += 1
+    print()
+
+    # ── 8. Summary ──
+    print(f"{BOLD}[8/8] Summary{RESET}")
+    total = DOCTOR_CHECKS_PASS + DOCTOR_CHECKS_FAIL + DOCTOR_CHECKS_WARN
+    print(f"    Pass: {DOCTOR_CHECKS_PASS}  Fail: {DOCTOR_CHECKS_FAIL}  Warn: {DOCTOR_CHECKS_WARN}")
+    if DOCTOR_CHECKS_FAIL == 0 and DOCTOR_CHECKS_WARN == 0:
+        print(f"\n{GREEN}{BOLD}✨ System: PERFECT{RESET}")
+    elif DOCTOR_CHECKS_FAIL == 0:
+        print(f"\n{YELLOW}{BOLD}✅ System: HEALTHY ({DOCTOR_CHECKS_WARN} warning(s)){RESET}")
+    elif DOCTOR_CHECKS_FAIL <= 2:
+        print(f"\n{RED}{BOLD}⚠️  System: DEGRADED ({DOCTOR_CHECKS_FAIL} fail(s), {DOCTOR_CHECKS_WARN} warning(s)){RESET}")
+    else:
+        print(f"\n{RED}{BOLD}❌ System: BROKEN ({DOCTOR_CHECKS_FAIL} fail(s), {DOCTOR_CHECKS_WARN} warning(s)){RESET}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="RAG CLI - Quick setup and management",
         formatter_class=argparse.RawDescriptionHelpFormatter,
 epilog="""
-Examples:
-  rag status          # Check all servers
-  rag test           # Test embedding generation
-  rag set local     # Set local API
-  rag config        # Show configuration
-  rag start         # Show how to start server
-  rag stop          # Stop servers
+Commands:
+  rag -h                 # Show this command list
+  rag status             # Check all servers
+  rag test               # Test embedding generation
+  rag config             # Show configuration
+  rag start              # Start server
+  rag stop               # Stop servers
+  rag doctor             # Smoke-test: workspace, scanner, API, env vars
+  rag dashboard          # Generate sprint progress HTML dashboard
+  rag watch              # Start CORE watcher (auto-index + dashboard)
+  rag -w                 # Show current workspace folder
+  rag -w /path/to/dir    # Set workspace folder
+  rag -l                 # Use local embedding API
+  rag -st                # Use sentence-transformers embeddings
         """
     )
+    parser.add_argument("-w", nargs="*", metavar="PATH", help="Show or set watched workspace folder")
+    parser.add_argument("-l", action="store_true", help="Use local embedding API")
+    parser.add_argument("-st", action="store_true", help="Use sentence-transformers embeddings")
     
     subparsers = parser.add_subparsers(dest="command", help="Commands")
     
@@ -233,24 +519,37 @@ Examples:
     # test
     subparsers.add_parser("test", help="Test embedding generation")
     
-    # set-embedding
-    set_parser = subparsers.add_parser("set-embedding", help="Set embedding source")
-    set_parser.add_argument("source", choices=["local", "sentence_transformers"], help="Source")
-    
     # config
     subparsers.add_parser("config", help="Show configuration")
     
     # start
     start_parser = subparsers.add_parser("start", help="Start RAG server", add_help=False)
     
-    # workspace
-    workspace_parser = subparsers.add_parser("workspace", help="Set workspace folder to scan")
-    workspace_parser.add_argument("path", nargs="*", help="Folder path")
+    # doctor
+    subparsers.add_parser("doctor", help="Run smoke-test to verify system health")
+    
+    # dashboard
+    subparsers.add_parser("dashboard", help="Generate sprint progress HTML dashboard")
+    
+    # watch
+    subparsers.add_parser("watch", help="Start CORE watcher (auto-index + dashboard)")
     
     # stop
     subparsers.add_parser("stop", help="Stop all servers")
 
     args = parser.parse_args()
+
+    if args.w is not None:
+        set_workspace(args.w)
+        return
+
+    if args.l:
+        set_embedding_source("local_api")
+        return
+
+    if args.st:
+        set_embedding_source("sentence_transformers")
+        return
     
     # Handle start - start the server
     if args.command == "start":
@@ -290,77 +589,31 @@ Examples:
     elif args.command == "test":
         test_embedding()
     
-    elif args.command == "set-embedding":
-        source = "local_api" if args.source == "local" else "sentence_transformers"
-        set_embedding_source(source)
+    elif args.command == "doctor":
+        doctor()
+    
+    elif args.command == "dashboard":
+        import subprocess, sys as _sys
+        dashboard_script = Path(__file__).parent / "goals_dashboard.py"
+        result = subprocess.run(
+            [_sys.executable, str(dashboard_script)],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            html = result.stdout
+            print(html[-1500:])
+            ok(f"Dashboard: {Path.home()/'CORE'/'dashboard.html'}")
+        else:
+            err(result.stderr.strip()[:200])
+    
+    elif args.command == "watch":
+        import subprocess, sys as _sys
+        watch_script = Path(__file__).parent / "core_watcher.py"
+        info("Starting CORE watcher...")
+        subprocess.run([_sys.executable, str(watch_script)])
     
     elif args.command == "config":
         show_config()
-    
-    elif args.command == "workspace":
-        folder_parts = args.path or []
-        folder = " ".join(folder_parts) if folder_parts else None
-        
-        if folder is None or folder == "show":
-            # Show current workspace
-            rag_root = get_rag_root()
-            config_path = rag_root / "config" / "default.yaml"
-            content = config_path.read_text()
-            for line in content.split("\n"):
-                if 'path:' in line and 'watched' not in line:
-                    current = line.split('"')[1] if '"' in line else None
-                    if current:
-                        ok(f"Current workspace: {current}")
-                        return
-            err("No workspace configured")
-            return
-        
-        folder_path = Path(folder).resolve()
-        
-        if not folder_path.exists():
-            err(f"Folder not found: {folder}")
-            return
-        
-        if not folder_path.is_dir():
-            err(f"Not a directory: {folder}")
-            return
-        
-        rag_root = get_rag_root()
-        config_path = rag_root / "config" / "default.yaml"
-        
-        content = config_path.read_text()
-        
-        # Find watched_directories and replace the path
-        lines = content.split("\n")
-        new_lines = []
-        in_watched = False
-        path_replaced = False
-        
-        for line in lines:
-            if "watched_directories:" in line:
-                in_watched = True
-                new_lines.append(line)
-            elif in_watched and "- path:" in line:
-                new_lines.append(f'    - path: "{folder_path}"')
-                path_replaced = True
-                in_watched = False
-            else:
-                new_lines.append(line)
-        
-        if not path_replaced:
-            # Insert after watched_directories if not found
-            new_lines = []
-            for line in lines:
-                new_lines.append(line)
-                if "watched_directories:" in line:
-                    new_lines.append(f'    - path: "{folder_path}"')
-                    new_lines.append(f'      recursive: true')
-                    path_replaced = True
-        
-        new_content = "\n".join(new_lines)
-        config_path.write_text(new_content)
-        ok(f"Set workspace: {folder_path}")
-        info("Restart scanner or reindex for changes")
     
     elif args.command == "stop":
         import subprocess

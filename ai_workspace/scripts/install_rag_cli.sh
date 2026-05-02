@@ -19,10 +19,8 @@ install_rag_cli() {
 export RAG_ROOT="$RAG_ROOT"
 
 rag() {
-    cd "$RAG_ROOT" && python scripts/rag_cli.py "$@"
+    cd "$RAG_ROOT" && python scripts/rag_cli.py "${@:-status}"
 }
-
-alias rag-set="rag set-embedding"
 EOF
     
     echo "Installed to $shellrc"
