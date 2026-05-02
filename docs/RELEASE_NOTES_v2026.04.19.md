@@ -2,7 +2,6 @@
 
 **License:** MIT License
 **Supported Languages:** English, Ukrainian  
-**Community:** [C.E.H. Framework on Gumroad](https://workshopai2.gumroad.com/l/ceh-framework)
 
 ---
 
