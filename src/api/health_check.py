@@ -217,7 +217,7 @@ class HealthChecker:
             status = get_scanner_status()
             latency = (time.time() - start) * 1000
 
-            is_running = status.get("is_running", False)
+            is_running = status.get("scanner_running", status.get("is_running", False))
             if is_running:
                 return ComponentHealth(
                     name="directory_scanner",
