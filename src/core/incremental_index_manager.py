@@ -315,7 +315,7 @@ class IncrementalIndexManager:
         """
         try:
             # Use ChromaDB's delete with where filter
-            result = self.vector_memory.collection.delete(where={"source": filepath})
+            result = self.vector_memory._collection.delete(where={"source": filepath})
             logger.info("Deleted chunks for source: %s", filepath)
             return result  # May return None or count depending on ChromaDB version
         except Exception as e:

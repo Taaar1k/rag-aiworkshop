@@ -60,7 +60,15 @@ class VectorMemory:
                 model_kwargs={"trust_remote_code": True}
             )
         except Exception as e:
-            logger.warning("Failed to load embeddings: %s", e)
+            logger.warning("GPU embedding load failed (%s); retrying on CPU", e)
+            try:
+                from langchain_community.embeddings import HuggingFaceEmbeddings
+                self._embeddings = HuggingFaceEmbeddings(
+                    model_name=self.config.embedding_model,
+                    model_kwargs={"trust_remote_code": True, "device": "cpu"},
+                )
+            except Exception as cpu_exc:
+                logger.warning("CPU embedding load also failed: %s", cpu_exc)
 
     def add(self, content: str, metadata: Optional[Dict[str, Any]] = None) -> str:
         """Add document to memory."""

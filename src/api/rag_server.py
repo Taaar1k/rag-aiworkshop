@@ -73,15 +73,14 @@ if _config_path.exists():
 @asynccontextmanager
 async def lifespan(app_fastapi: FastAPI):
     logger.info("RAG server lifespan startup...")
-    
-    # Initialize scanner
-    await initialize_scanner(_dir_scan_config)
-    await start_scanner()
-    
+
     embeddings = initialize_embedding_model()
     app_fastapi.state.embeddings = embeddings
 
     app_fastapi.state.llm = initialize_llm_model()
+
+    await initialize_scanner(_dir_scan_config)
+    await start_scanner()
 
     yield
 
