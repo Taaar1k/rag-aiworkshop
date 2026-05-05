@@ -7,6 +7,8 @@ import os
 import logging
 import uuid
 
+import httpx
+
 logger = logging.getLogger(__name__)
 
 from datetime import datetime
@@ -27,6 +29,33 @@ class MemoryConfig:
     batch_size: int = 100
     max_collection_size: int = 10_000_000
     embedding_model: str = "nomic-ai/nomic-embed-text-v1.5"
+    embedding_endpoint: Optional[str] = None
+    embedding_timeout: float = 30.0
+
+
+class RemoteEmbeddings:
+    """OpenAI-compatible embedding client (llama.cpp / any /v1/embeddings server)."""
+
+    def __init__(self, endpoint: str, timeout: float = 30.0):
+        self.endpoint = endpoint.rstrip("/")
+        self.timeout = timeout
+
+    def _embed(self, inputs: List[str]) -> List[List[float]]:
+        resp = httpx.post(
+            self.endpoint,
+            json={"input": inputs},
+            timeout=self.timeout,
+        )
+        resp.raise_for_status()
+        data = resp.json()["data"]
+        data.sort(key=lambda d: d.get("index", 0))
+        return [d["embedding"] for d in data]
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return self._embed(texts)
+
+    def embed_query(self, text: str) -> List[float]:
+        return self._embed([text])[0]
 
 
 class VectorMemory:
@@ -53,6 +82,17 @@ class VectorMemory:
             metadata={"hnsw:space": "cosine"}
         )
         
+        endpoint = self.config.embedding_endpoint or os.getenv("LOCAL_EMBEDDING_URL")
+        if endpoint:
+            try:
+                client = RemoteEmbeddings(endpoint, timeout=self.config.embedding_timeout)
+                client.embed_query("ping")
+                self._embeddings = client
+                logger.info("Using remote embedding endpoint: %s", endpoint)
+                return
+            except Exception as e:
+                logger.warning("Remote embedding endpoint %s unreachable (%s); falling back to in-process model", endpoint, e)
+
         try:
             from langchain_community.embeddings import HuggingFaceEmbeddings
             self._embeddings = HuggingFaceEmbeddings(

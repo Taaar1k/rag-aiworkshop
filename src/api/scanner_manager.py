@@ -7,6 +7,7 @@ API endpoints for scanner control.
 
 import asyncio
 import logging
+import os
 from typing import Optional, Dict, Any
 from pathlib import Path
 from fastapi import APIRouter
@@ -44,8 +45,14 @@ async def initialize_scanner(config: Dict[str, Any]) -> None:
     chunk_size = config.get("indexing", {}).get("chunk_size", 512)
     chunk_overlap = config.get("indexing", {}).get("chunk_overlap", 50)
 
-    # Initialize MemoryManager
-    mem_config = MemoryConfig()
+    # Initialize MemoryManager — prefer remote embedding endpoint to avoid loading
+    # an in-process HuggingFace model that competes for GPU memory.
+    mem_config = MemoryConfig(
+        embedding_endpoint=os.getenv(
+            "LOCAL_EMBEDDING_URL",
+            "http://localhost:8090/v1/embeddings",
+        ),
+    )
     mem_manager = MemoryManager(mem_config)
 
     # Initialize IncrementalIndexManager
@@ -118,3 +125,20 @@ async def scanner_stop():
         return {"error": "Scanner not initialized"}
     await _scanner.stop()
     return {"message": "Scanner stopped", "status": get_scanner_status()}
+
+
+@router.post("/scan-now")
+async def scanner_scan_now():
+    """Trigger an immediate initial_scan of all watched directories."""
+    global _scanner, _index_manager
+    if _scanner is None or _index_manager is None:
+        return {"error": "Scanner not initialized"}
+
+    paths = [d.get("path", "") for d in _scanner.watched_directories if d.get("path")]
+    indexed = await asyncio.to_thread(_index_manager.initial_scan, paths)
+    return {
+        "message": "Initial scan complete",
+        "indexed": indexed,
+        "watched_paths": paths,
+        "status": get_scanner_status(),
+    }
