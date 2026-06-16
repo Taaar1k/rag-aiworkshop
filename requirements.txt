@@ -3,7 +3,7 @@ sentence-transformers
 scikit-learn
 numpy
 chromadb
-slowapi>=0.1.6
+slowapi>=0.1.9
 torch
 Pillow
 rank_bm25
